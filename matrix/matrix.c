@@ -73,7 +73,7 @@ matrix_t *matrix_multiply(matrix_t *A, matrix_t *B)
 
 void matrix_print(matrix_t *m)
 {
-
+    printf("\n\nMATRIZ:\n");
    int i, j;
    for (i = 0; i < m->rows; i++) {
       for (j = 0; j < m->cols; j++) {
