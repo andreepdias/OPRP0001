@@ -6,7 +6,7 @@
 #define random() ((rand() ^ rand()) / (RAND_MAX + 1.0))
 
 typedef struct {
-      double **data;
+      double **matrix;
       int rows;
       int cols;
 } matrix_t;

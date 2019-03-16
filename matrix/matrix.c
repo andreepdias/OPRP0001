@@ -11,11 +11,11 @@ matrix_t *matrix_create(int rows, int cols)
 
     m->rows = rows;
     m->cols = cols;
-    m->data = malloc(sizeof(double *) * rows);
+    m->matrix = malloc(sizeof(double *) * rows);
 
     int i = 0;
     for(i = 0; i < rows; i++){
-        m->data[i] = &temp[i * cols];
+        m->matrix[i] = &temp[i * cols];
     }
 
     return m;
@@ -23,8 +23,8 @@ matrix_t *matrix_create(int rows, int cols)
 
 void matrix_destroy(matrix_t *m)
 {
-    free(m->data[0]);
-    free(m->data);
+    free(m->matrix[0]);
+    free(m->matrix);
     free(m);
 
     m = NULL;
@@ -35,7 +35,7 @@ void matrix_randfill(matrix_t *m)
    int i, j;
    for (i = 0; i < m->rows; i++) {
       for (j = 0; j < m->cols; j++) {
-         m->data[i][j] = random();
+         m->matrix[i][j] = random();
       }
    }
 }
@@ -45,17 +45,13 @@ void matrix_fill(matrix_t *m, double val)
    int i, j;
    for (i = 0; i < m->rows; i++) {
       for (j = 0; j < m->cols; j++) {
-         m->data[i][j] = val;
+         m->matrix[i][j] = val;
       }
    }
 }
 
 matrix_t *matrix_multiply(matrix_t *A, matrix_t *B)
 {
-    if(A->cols != B->rows){
-        printf("O numero de colunas de A e diferente do numero de linhas de B.");
-    }
-
     matrix_t *m = matrix_create(A->rows, B->cols);
     matrix_fill(m, 0);
 
@@ -63,7 +59,7 @@ matrix_t *matrix_multiply(matrix_t *A, matrix_t *B)
     for(i = 0; i < A->rows; i++){
         for(j = 0; j < B->cols; j++){
             for(k = 0; k < A->cols; k++){
-                m->data[i][j] += A->data[i][k] + B->data[k][j];
+                m->matrix[i][j] += A->matrix[i][k] + B->matrix[k][j];
             }
         }
     }
@@ -73,14 +69,14 @@ matrix_t *matrix_multiply(matrix_t *A, matrix_t *B)
 
 void matrix_print(matrix_t *m)
 {
-    printf("\n\nMATRIZ:\n");
    int i, j;
    for (i = 0; i < m->rows; i++) {
       for (j = 0; j < m->cols; j++) {
-         printf("%.17f ", m->data[i][j]);
+         printf("%.17f ", m->matrix[i][j]);
       }
       printf("\n");
    }
+   printf("\n");
    fflush(stdout);
 }
 
@@ -97,7 +93,7 @@ matrix_t *matrix_sum(matrix_t *A, matrix_t *B)
     int i, j;
     for(i = 0; i < A->rows; i++){
         for(j = 0; j < A->cols; j++){
-            m->data[i][j] = A->data[i][j] + B->data[i][j];
+            m->matrix[i][j] = A->matrix[i][j] + B->matrix[i][j];
         }
     }
 
@@ -111,17 +107,17 @@ matrix_t *matrix_sort(matrix_t *A)
     int i, j;
     for(i = 0; i < A->rows; i++){
         for(j = 0; j < A->cols; j++){
-            m->data[i][j] = A->data[i][j];
+            m->matrix[i][j] = A->matrix[i][j];
         }
     }
 
     double aux;
     for(i = 0; i < A->rows * A->cols; i++){
         for(j = i; j < A->rows * A->cols; j++){
-            if(m->data[0][j] < m->data[0][i]){
-                aux = m->data[0][i];
-                m->data[0][i] = m->data[0][j];
-                m->data[0][j] = aux;
+            if(m->matrix[0][j] < m->matrix[0][i]){
+                aux = m->matrix[0][i];
+                m->matrix[0][i] = m->matrix[0][j];
+                m->matrix[0][j] = aux;
             }
         }
     }
