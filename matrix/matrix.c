@@ -1,6 +1,3 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
 #include "matrix.h"
 
 matrix_t *matrix_create(int rows, int cols)

@@ -1,3 +1,8 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/time.h>
+#include <pthread.h>
+
 #ifndef __MATRIX_H
 #define __MATRIX_H
 

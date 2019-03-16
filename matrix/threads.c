@@ -1,7 +1,4 @@
 #include "matrix.h"
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 typedef struct {
 	int id;
@@ -12,12 +9,14 @@ typedef struct {
 	int upperbound;
 } DadosThread;
 
-
 void *trabalho_thread_soma(void *);
+double wtime();
+
 
 int main(int argc, char *argv[])
 {
 	int nthreads, nrows, ncols;
+	double start_time, end_time;
 
 	if (argc < 4) {
 		printf("%s <nthreads> <rows> <cols>\n", argv[0]);
@@ -38,6 +37,8 @@ int main(int argc, char *argv[])
 		 printf("Erro ao alocar memória\n");
                 exit(EXIT_FAILURE);
 	}
+
+	start_time = wtime();
 
 	matrix_t *a = matrix_create(nrows, ncols);
     matrix_randfill(a);
@@ -77,10 +78,6 @@ int main(int argc, char *argv[])
 	for (i = 0; i < nthreads; i++) {
 		pthread_join(threads[i], NULL);		
 	}
-
-	free(dt);
-	free(threads);
-
 	/*
 	printf("a:\n");
 	matrix_print(a);
@@ -89,16 +86,18 @@ int main(int argc, char *argv[])
 	printf("c:\n");
 	matrix_print(c);
 	*/
+
+	free(bounds);
+	free(dt);
+	free(threads);
+	matrix_destroy(a);
+    matrix_destroy(b);
+	matrix_destroy(c);
+
+	end_time = wtime();
+	printf("%f s\n", nrows, ncols, end_time - start_time);
+
 	return EXIT_SUCCESS;
-}
-
-void *trabalho_da_thread(void *arg)
-{
-	DadosThread *p = (DadosThread *) arg;
-	
-	printf("Thread %d executando\n", p->id);
-
-	return NULL;
 }
 
 void *trabalho_thread_soma(void *_dt)
@@ -118,4 +117,11 @@ void *trabalho_thread_soma(void *_dt)
 		}
 	}
 	return NULL;
+}
+
+double wtime()
+{
+   struct timeval t;
+   gettimeofday(&t, NULL);
+   return t.tv_sec + t.tv_usec / 1000000.0;
 }
