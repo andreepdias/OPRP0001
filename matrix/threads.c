@@ -10,8 +10,6 @@ typedef struct {
 	matrix_t *C;
 	int lowerbound;
 	int upperbound;
-	// id % n_linhas
-	// 
 } DadosThread;
 
 
