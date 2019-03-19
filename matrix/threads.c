@@ -10,6 +10,7 @@ typedef struct {
 } DadosThread;
 
 void *trabalho_thread_soma(void *);
+void *trabalho_thread_multiplicao(void *);
 double wtime();
 
 
@@ -41,10 +42,31 @@ int main(int argc, char *argv[])
 	start_time = wtime();
 
 	matrix_t *a = matrix_create(nrows, ncols);
-    matrix_randfill(a);
+	matrix_randfill(a);
+	// printf("a:\n");
+	// matrix_print(a);
+
+	matrix_t *c = matrix_sort_quick(a);
+	// printf("c:\n");
+	// matrix_print(c);
+
+	free(dt);
+	free(threads);
+	matrix_destroy(a);
+    matrix_destroy(c);
+	/*
+
+	matrix_t *a = matrix_create(nrows, ncols);
+    matrix_fill(a, 2);
 	matrix_t *b = matrix_create(nrows, ncols);
-    matrix_randfill(b);
+    matrix_fill(b, 2);
 	matrix_t *c = matrix_create(nrows, ncols);
+	matrix_fill(c, 0.0);
+	
+
+	matrix_print(a);
+	matrix_print(b);
+	matrix_print(c);
 
 	int i, k = 0;
 	int *bounds = (int*)malloc(sizeof(int) * nthreads);
@@ -58,9 +80,10 @@ int main(int argc, char *argv[])
 			bounds[i]++;
 		}
 	}
-	/*for(i = 0; i < nthreads; i++){
+	for(i = 0; i < nthreads; i++){
 		printf("Bounds[%d]: %d\n", i, bounds[i]);
-	}*/
+	
+	}
 	k = 0;
 	for(i = 0; i < nthreads; i++){
 		dt[i].id = i;
@@ -70,22 +93,21 @@ int main(int argc, char *argv[])
 		dt[i].lowerbound = k;
 		dt[i].upperbound = bounds[i] + k;
 		k = dt[i].upperbound;
-		/* printf("i:%d\tlowerbound:%d\tupperbound:%d\n", i, dt[i].lowerbound, dt[i].upperbound); */
-	 	pthread_create(&threads[i], NULL, trabalho_thread_soma, (void *) (dt + i));
+	 	pthread_create(&threads[i], NULL, trabalho_thread_multiplicao, (void *) (dt + i));
 
 	}
 
 	for (i = 0; i < nthreads; i++) {
 		pthread_join(threads[i], NULL);		
 	}
-	/*
+	
 	printf("a:\n");
 	matrix_print(a);
 	printf("b:\n");
 	matrix_print(b);
 	printf("c:\n");
 	matrix_print(c);
-	*/
+	
 
 	free(bounds);
 	free(dt);
@@ -94,8 +116,10 @@ int main(int argc, char *argv[])
     matrix_destroy(b);
 	matrix_destroy(c);
 
+	*/
+
 	end_time = wtime();
-	printf("%f s\n", nrows, ncols, end_time - start_time);
+	printf("%f s\n", end_time - start_time);
 
 	return EXIT_SUCCESS;
 }
@@ -114,6 +138,52 @@ void *trabalho_thread_soma(void *_dt)
 	for(i = lowerbound; i < upperbound; i++){
 		for(j = 0; j < ncols; j++){
 			dt->C->matrix[i][j] = dt->A->matrix[i][j] + dt->B->matrix[i][j];
+		}
+	}
+	return NULL;
+}
+
+void *trabalho_thread_multiplicao(void *_dt)
+{
+	DadosThread *dt = (DadosThread*) _dt;
+	
+	int arows, acols, brows, bcols, lowerbound, upperbound;
+	arows = dt->A->rows;
+	acols = dt->A->cols;
+	brows = dt->B->rows;
+	bcols = dt->B->cols;
+	lowerbound = dt->lowerbound;
+	upperbound = dt->upperbound;
+
+	int i, j, k;
+	for(i = lowerbound; i < upperbound; i++){
+		for(j = 0; j < bcols; j++){
+			for(k = 0; k < acols; k++){
+				dt->C->matrix[i][j] += dt->A->matrix[i][k] * dt->B->matrix[k][j];
+			}
+		}
+	}
+	return NULL;
+}
+
+void *trabalho_thread_sort(void *_dt)
+{
+	DadosThread *dt = (DadosThread*) _dt;
+	
+	int arows, acols, brows, bcols, lowerbound, upperbound;
+	arows = dt->A->rows;
+	acols = dt->A->cols;
+	brows = dt->B->rows;
+	bcols = dt->B->cols;
+	lowerbound = dt->lowerbound;
+	upperbound = dt->upperbound;
+
+	int i, j, k;
+	for(i = lowerbound; i < upperbound; i++){
+		for(j = 0; j < bcols; j++){
+			for(k = 0; k < acols; k++){
+				dt->C->matrix[i][j] += dt->A->matrix[i][k] * dt->B->matrix[k][j];
+			}
 		}
 	}
 	return NULL;

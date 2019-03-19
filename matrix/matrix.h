@@ -33,7 +33,9 @@ matrix_t *matrix_multiply(matrix_t *A, matrix_t *B);
 
 matrix_t *matrix_sum(matrix_t *A, matrix_t *B);
 
-matrix_t *matrix_sort(matrix_t *A);
+matrix_t *matrix_sort_bubble(matrix_t *A);
+
+matrix_t *matrix_sort_quick(matrix_t *A);
 
 void matrix_print(matrix_t *m);
 
