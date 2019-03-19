@@ -37,6 +37,14 @@ matrix_t *matrix_sort_bubble(matrix_t *A);
 
 matrix_t *matrix_sort_quick(matrix_t *A);
 
+matrix_t *matrix_sort_quick_paralelo(matrix_t *A, int nthreads);
+
 void matrix_print(matrix_t *m);
+
+void quickSort(double **matrix, int low, int high);
+int partition (double **matrix, int low, int high);
+void swap(double* a, double* b);
+
+void quickSortParalelo(double **matrix, int low, int high, int pivot);
 
 #endif 

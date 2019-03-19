@@ -157,6 +157,17 @@ void quickSort(double **matrix, int low, int high)
     } 
 } 
 
+void quickSortParalelo(double **matrix, int low, int high, int pivot) 
+{ 
+    if (low < high) 
+    { 
+        int pi = partition(matrix, low, high); 
+  
+        quickSort(matrix, low, pi - 1); 
+        quickSort(matrix, pi + 1, high); 
+    } 
+} 
+
 matrix_t *matrix_sort_quick(matrix_t *A)
 {
     matrix_t *m = matrix_create(A->rows, A->cols);
@@ -171,6 +182,51 @@ matrix_t *matrix_sort_quick(matrix_t *A)
     int n = A->rows * A->cols; 
 
     quickSort(m->matrix, 0, n - 1); 
+
+    return m;
+}
+
+matrix_t *matrix_sort_quick_paralelo(matrix_t *A, int nthreads)
+{
+    matrix_t *m = matrix_create(A->rows, A->cols);
+
+    int i, j;
+    for(i = 0; i < A->rows; i++){
+        for(j = 0; j < A->cols; j++){
+            m->matrix[i][j] = A->matrix[i][j];
+        }
+    }
+
+    int n = A->rows * A->cols; 
+
+    if(nthreads > 8) nthreads = 8;
+
+    int piece = n / nthreads;
+
+    int n_pivots = 1;
+
+    int index_pivot = n / n_pivots;
+    int pivot = m->matrix[0][index_pivot];
+
+    while(n_pivots <= 8){
+
+        int *pivots = (int*)malloc(sizeof(int) * n_pivots);
+
+        for(int i = 0; i < n_pivots; i++){
+            // ...
+        }
+
+        for(i = 0; i < nthreads; i++){
+            quickSortParalelo(m->matrix, (piece * i), (piece * i) + piece - 1, pivot);
+        }
+
+        n_pivots *= 2;
+
+    }
+
+    while(nthreads > 1){
+        quickSort(m->matrix, 0, n - 1); 
+    }
 
     return m;
 }
