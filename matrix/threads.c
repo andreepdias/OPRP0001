@@ -1,4 +1,5 @@
 #include "matrix.h"
+#include <math.h>
 
 typedef struct {
 	int id;
@@ -27,6 +28,7 @@ int main(int argc, char *argv[])
 	nrows = atoi(argv[2]);
 	ncols = atoi(argv[3]);
 
+	/*
 	DadosThread *dt = NULL;
 	pthread_t *threads = NULL;
 
@@ -38,23 +40,16 @@ int main(int argc, char *argv[])
 		 printf("Erro ao alocar memória\n");
                 exit(EXIT_FAILURE);
 	}
+	*/
 
 	start_time = wtime();
 
-	matrix_t *a = matrix_create(nrows, ncols);
-	matrix_randfill(a);
-	// printf("a:\n");
-	// matrix_print(a);
-
-	matrix_t *c = matrix_sort_quick(a);
-	// printf("c:\n");
-	// matrix_print(c);
-
+/*
 	free(dt);
 	free(threads);
 	matrix_destroy(a);
     matrix_destroy(c);
-	/*
+	
 
 	matrix_t *a = matrix_create(nrows, ncols);
     matrix_fill(a, 2);
@@ -166,28 +161,6 @@ void *trabalho_thread_multiplicao(void *_dt)
 	return NULL;
 }
 
-void *trabalho_thread_sort(void *_dt)
-{
-	DadosThread *dt = (DadosThread*) _dt;
-	
-	int arows, acols, brows, bcols, lowerbound, upperbound;
-	arows = dt->A->rows;
-	acols = dt->A->cols;
-	brows = dt->B->rows;
-	bcols = dt->B->cols;
-	lowerbound = dt->lowerbound;
-	upperbound = dt->upperbound;
-
-	int i, j, k;
-	for(i = lowerbound; i < upperbound; i++){
-		for(j = 0; j < bcols; j++){
-			for(k = 0; k < acols; k++){
-				dt->C->matrix[i][j] += dt->A->matrix[i][k] * dt->B->matrix[k][j];
-			}
-		}
-	}
-	return NULL;
-}
 
 double wtime()
 {
