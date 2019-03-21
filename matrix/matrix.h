@@ -7,9 +7,8 @@
 #include <pthread.h>
 #include <math.h>
 // #include "matrix_threads.h"
-#include "quicksort.h"
+// #include "quicksort.h"
 // #include "quicksort_threads.h"
-
 
 
 #define random() ((rand() ^ rand()) / (RAND_MAX + 1.0))
@@ -19,6 +18,8 @@ typedef struct {
       int rows;
       int cols;
 } matrix_t;
+
+
 
 /*
  * All functions must return a new matriz (when need)

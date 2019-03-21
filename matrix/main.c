@@ -1,6 +1,7 @@
 //gcc main.c matrix.c quicksort.c quicksort_threads.c matrix_threads.c -pthread -lm
 
 #include "matrix.h"
+#include "quicksort_threads.h"
 
 double wtime();
 
@@ -17,6 +18,18 @@ int main(int argc, char *argv[])
 	nrows = atoi(argv[2]);
 	ncols = atoi(argv[3]);
 
+	start_time = wtime();
+
+
+	matrix_t *A = matrix_create(nrows, ncols);
+	matrix_randfill(A);
+	matrix_print(A);
+
+	matrix_t *M = matrix_sort_quick_paralelo(A, nthreads);
+	matrix_print(M);
+
+	// end_time = wtime();
+	// printf("%f s\n", end_time - start_time);
 	/*
 	DadosThread *dt = NULL;
 	pthread_t *threads = NULL;
@@ -31,7 +44,6 @@ int main(int argc, char *argv[])
 	}
 	*/
 
-	start_time = wtime();
 
 /*
 	free(dt);
@@ -42,11 +54,29 @@ int main(int argc, char *argv[])
 
 	matrix_t *a = matrix_create(nrows, ncols);
     matrix_fill(a, 2);
-	matrix_t *b = matrix_create(nrows, ncols);
+	matrix_t *b = matrix_create(nrows, nc
+	// end_time = wtime();
+	// printf("%f s\n", end_time - start_time);ols);
     matrix_fill(b, 2);
 	matrix_t *c = matrix_create(nrows, ncols);
 	matrix_fill(c, 0.0);
-	
+		// end_time = wtime();
+	// printf("%f s\n", end_time - start_time);
+
+	// end_time = wtime();
+	// printf("%f s\n", end_time - start_time);
+
+	// end_time = wtime();
+	// printf("%f s\n", end_time - start_time);
+
+	// end_time = wtime();
+	// printf("%f s\n", end_time - start_time);
+
+	// end_time = wtime();
+	// printf("%f s\n", end_time - start_time);
+
+	// end_time = wtime();
+	// printf("%f s\n", end_time - start_time);
 
 	matrix_print(a);
 	matrix_print(b);
@@ -64,10 +94,10 @@ int main(int argc, char *argv[])
 			bounds[i]++;
 		}
 	}
-	for(i = 0; i < nthreads; i++){
-		printf("Bounds[%d]: %d\n", i, bounds[i]);
+	f
+		// end_time = wtime();s[i]);
 	
-	}
+	}	// printf("%f s\n", end_time - start_time);
 	k = 0;
 	for(i = 0; i < nthreads; i++){
 		dt[i].id = i;
@@ -94,11 +124,6 @@ int main(int argc, char *argv[])
 	
 
 	free(bounds);
-	free(dt);
-	free(threads);
-	matrix_destroy(a);
-    matrix_destroy(b);
-	matrix_destroy(c);
 
 	*/
 
