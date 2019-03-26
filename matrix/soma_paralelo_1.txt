@@ -1,0 +1,2 @@
+Soma Paralelo 1 Threads:
+0.714833

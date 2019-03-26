@@ -98,6 +98,7 @@ void *trabalho_thread_quick_sort(void *_dt)
 
 matrix_t *matrix_sort_quick_paralelo(matrix_t *A, int nthreads)
 {
+    printf("oi\n");
     matrix_t *m = matrix_clone(A);
 
     int n = A->rows * A->cols;
