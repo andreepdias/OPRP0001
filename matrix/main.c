@@ -1,12 +1,15 @@
-//gcc main.c matrix.c quicksort.c quicksort_threads.c matrix_threads.c -pthread -lm
+//gcc main.c matrix.c quicksort.c quicksort_threads.c matrix_threads.c -pthread -lm -o s
 
 #include "matrix.h"
 #include "quicksort_threads.h"
+#include "quicksort.h"
 
 double wtime();
 
 int main(int argc, char *argv[])
 {
+	srand(time(NULL));
+
 	int nthreads, nrows, ncols;
 	double start_time, end_time;
 
@@ -23,65 +26,20 @@ int main(int argc, char *argv[])
 
 	matrix_t *A = matrix_create(nrows, ncols);
 	matrix_randfill(A);
-	matrix_print(A);
+	// matrix_print(A);
 
-	matrix_t *M = matrix_sort_quick_paralelo(A, nthreads);
+	// matrix_t *M = matrix_sort_quick_paralelo(A, nthreads);
+	matrix_t *M = matrix_sort_quick(A);
 	matrix_print(M);
 
-	// end_time = wtime();
-	// printf("%f s\n", end_time - start_time);
+	matrix_destroy(A);
+	matrix_destroy(M);
+
+	end_time = wtime();
+	printf("%f s\n", end_time - start_time);
+
+	return EXIT_SUCCESS;
 	/*
-	DadosThread *dt = NULL;
-	pthread_t *threads = NULL;
-
-	if (!(dt = (DadosThread *) malloc(sizeof(DadosThread) * nthreads))) {
-		printf("Erro ao alocar memória\n");
-		exit(EXIT_FAILURE);
-	}
-	if (!(threads = (pthread_t *) malloc(sizeof(pthread_t) * nthreads))) {
-		 printf("Erro ao alocar memória\n");
-                exit(EXIT_FAILURE);
-	}
-	*/
-
-
-/*
-	free(dt);
-	free(threads);
-	matrix_destroy(a);
-    matrix_destroy(c);
-	
-
-	matrix_t *a = matrix_create(nrows, ncols);
-    matrix_fill(a, 2);
-	matrix_t *b = matrix_create(nrows, nc
-	// end_time = wtime();
-	// printf("%f s\n", end_time - start_time);ols);
-    matrix_fill(b, 2);
-	matrix_t *c = matrix_create(nrows, ncols);
-	matrix_fill(c, 0.0);
-		// end_time = wtime();
-	// printf("%f s\n", end_time - start_time);
-
-	// end_time = wtime();
-	// printf("%f s\n", end_time - start_time);
-
-	// end_time = wtime();
-	// printf("%f s\n", end_time - start_time);
-
-	// end_time = wtime();
-	// printf("%f s\n", end_time - start_time);
-
-	// end_time = wtime();
-	// printf("%f s\n", end_time - start_time);
-
-	// end_time = wtime();
-	// printf("%f s\n", end_time - start_time);
-
-	matrix_print(a);
-	matrix_print(b);
-	matrix_print(c);
-
 	int i, k = 0;
 	int *bounds = (int*)malloc(sizeof(int) * nthreads);
 	if(nthreads > nrows) nthreads = nrows;
@@ -95,9 +53,6 @@ int main(int argc, char *argv[])
 		}
 	}
 	f
-		// end_time = wtime();s[i]);
-	
-	}	// printf("%f s\n", end_time - start_time);
 	k = 0;
 	for(i = 0; i < nthreads; i++){
 		dt[i].id = i;
@@ -110,27 +65,11 @@ int main(int argc, char *argv[])
 	 	pthread_create(&threads[i], NULL, trabalho_thread_multiplicao, (void *) (dt + i));
 
 	}
-
 	for (i = 0; i < nthreads; i++) {
 		pthread_join(threads[i], NULL);		
 	}
-	
-	printf("a:\n");
-	matrix_print(a);
-	printf("b:\n");
-	matrix_print(b);
-	printf("c:\n");
-	matrix_print(c);
-	
-
-	free(bounds);
-
 	*/
-
-	end_time = wtime();
-	printf("%f s\n", end_time - start_time);
-
-	return EXIT_SUCCESS;
+	
 }
 
 

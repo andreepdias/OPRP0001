@@ -12,19 +12,18 @@ void *trabalho_thread_quick_sort(void *_dt)
     int high = dt->high;
     int current_level = dt->current_level;
     int last_level = dt->last_level;
+    int n = dt->n;
     double **matrix;
     matrix = *(dt->matrix);
-    int n = dt->n;
 
     int piece = (high - low + 1) / 2;
-    printf("Id: %d\nCurrent Level: %d\tLast Level:%d\nlow:%d\thigh:%d\npiece:%d\n\n", id, current_level, last_level, low, high, piece);
+    // printf("Id: %d\nCurrent Level: %d\tLast Level:%d\nlow:%d\thigh:%d\npiece:%d\n\n", id, current_level, last_level, low, high, piece);
 
 
-    if(current_level < last_level){
+    if(current_level < last_level && current_level < 3){
 
         DadosThreadQuickSort *dt = NULL;
         pthread_t *threads = NULL;
-
         if (!(dt = (DadosThreadQuickSort *) malloc(sizeof(DadosThreadQuickSort) * 2))) {
             printf("Erro ao alocar memória\n");
             exit(EXIT_FAILURE);
@@ -56,7 +55,10 @@ void *trabalho_thread_quick_sort(void *_dt)
         for(int i = 0; i < 2; i++){
             pthread_join(threads[i], NULL);		
         }
-        
+
+        free(dt);
+        free(threads);
+
         quickSort(matrix, low, high);
         
         /*
@@ -101,9 +103,9 @@ matrix_t *matrix_sort_quick_paralelo(matrix_t *A, int nthreads)
     int n = A->rows * A->cols;
     int depth = (int)log2(nthreads);
 
+    
     DadosThreadQuickSort *dt = NULL;
     pthread_t *threads = NULL;
-
     if (!(dt = (DadosThreadQuickSort *) malloc(sizeof(DadosThreadQuickSort) * 1))) {
         printf("Erro ao alocar memória\n");
         exit(EXIT_FAILURE);
@@ -123,7 +125,10 @@ matrix_t *matrix_sort_quick_paralelo(matrix_t *A, int nthreads)
     dt[0].high = n - 1;
     dt[0].n = n / A->cols;
     pthread_create(&threads[0], NULL, trabalho_thread_quick_sort, (void *) (dt + 0));
-    pthread_join(threads[0], NULL);		
+    pthread_join(threads[0], NULL);
+
+    free(dt);
+    free(threads);
 
     quickSort(A->matrix, 0, n - 1);
 
