@@ -36,7 +36,12 @@ int partition_paralelo(double **matrix, int low, int high, int current_level, in
     DadosThreadQuickSort dt[nthreads];
     pthread_t threads[nthreads];
 
-    
+    int x, k = 0;
+    for(x = 0; x < nthreads; x++){
+        dt[x].low = k;
+        dt[x].high = partes[x] + k;
+        k = dt[x].high;
+    }
 
     swap(&matrix[0][(*i) + 1], &matrix[0][high]);
     return (i + 1);
