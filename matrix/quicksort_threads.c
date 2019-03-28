@@ -11,13 +11,12 @@ void *partition_swap(void *_dt){
     pthread_mutex_t *mutex_i = dt->mutex_i;
 
     for (int j = low; j < high; j++){
-        pthread_mutex_lock(mutex_i);
-        (*i)++;
-        pthread_mutex_unlock(mutex_i);
-        swap(&matrix[0][(*i)], &matrix[0][j]);
-    }
-    {
-
+        if (matrix[0][j] < pivot){
+            pthread_mutex_lock(mutex_i);
+            (*i)++;
+            pthread_mutex_unlock(mutex_i);
+            swap(&matrix[0][(*i)], &matrix[0][j]);
+        }
     }
 }
 
@@ -37,17 +36,9 @@ int partition_paralelo(double **matrix, int low, int high, int current_level, in
     DadosThreadQuickSort dt[nthreads];
     pthread_t threads[nthreads];
 
-    for (int j = low; j <= high - 1; j++)
-    {
-        if (matrix[0][j] < pivot)
-        {
-            i++;
-            swap(&matrix[0][i], &matrix[0][j]);
-        }
-    }
+    
 
-
-    swap(&matrix[0][i + 1], &matrix[0][high]);
+    swap(&matrix[0][(*i) + 1], &matrix[0][high]);
     return (i + 1);
 }
 
