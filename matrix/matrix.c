@@ -27,6 +27,7 @@ void matrix_destroy(matrix_t *m)
 
 void matrix_randfill(matrix_t *m)
 {
+    srand(time(NULL));
    int i, j;
    for (i = 0; i < m->rows; i++) {
       for (j = 0; j < m->cols; j++) {

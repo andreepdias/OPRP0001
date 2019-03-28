@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 		}
 		end_time = wtime();
 
-		// matrix_print(A);
+		matrix_print(A);
 		matrix_destroy(A);
 		
 		double t = end_time - start_time;

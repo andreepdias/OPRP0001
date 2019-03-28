@@ -39,7 +39,7 @@ void *trabalho_thread_multiplicao(void *_dt){
 	pthread_exit(NULL);
 }
 
-int *calcula_numero_linhas_para_thread(int nrows, int nthreads){
+int *divide_em_partes(int nrows, int nthreads){
 	int i, k = 0;
 	int *bounds = (int *)malloc(sizeof(int) * nthreads);
 	if (nthreads > nrows)
@@ -59,7 +59,7 @@ int *calcula_numero_linhas_para_thread(int nrows, int nthreads){
 
 matrix_t *matrix_sum_paralelo(matrix_t *A, matrix_t *B, int nthreads){
 
-	int *bounds = calcula_numero_linhas_para_thread(A->rows, nthreads);
+	int *bounds = divide_em_partes(A->rows, nthreads);
 	
 	matrix_t *C = matrix_create(A->rows, A->cols);
 
@@ -85,7 +85,7 @@ matrix_t *matrix_sum_paralelo(matrix_t *A, matrix_t *B, int nthreads){
 matrix_t *matrix_multiply_paralelo(matrix_t *A, matrix_t *B, int nthreads)
 {
 
-	int *bounds = calcula_numero_linhas_para_thread(A->rows, nthreads);
+	int *bounds = divide_em_partes(A->rows, nthreads);
 
 	matrix_t *C = matrix_create(A->rows, A->cols);
 

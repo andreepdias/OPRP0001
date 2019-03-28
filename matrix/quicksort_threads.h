@@ -11,6 +11,15 @@ typedef struct {
 	int last_level;
 } DadosThreadQuickSort;
 
+typedef struct {
+	double **matrix;
+	int low;
+	int high;
+	int pivot;
+	int *i;
+	pthread_mutex_t *mutex_i;
+} DadosThreadPartition;
+
 matrix_t *matrix_sort_quick_paralelo(matrix_t *A, int nthreads);
 
 #endif

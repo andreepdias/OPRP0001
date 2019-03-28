@@ -1,50 +1,54 @@
 #include "quicksort_threads.h"
 #include "quicksort.h"
+#include "matrix_threads.h"
 
+void *partition_swap(void *_dt){
+    DadosThreadPartition *dt = (DadosThreadPartition*) _dt;
 
-void *trabalho_thread_quick_sort(void *_dt)
-{ 
-
-    DadosThreadQuickSort *dt = (DadosThreadQuickSort*) _dt;
-
-    int low = dt->low;
-    int high = dt->high;
-    int current_level = dt->current_level;
-    int last_level = dt->last_level;
+    int low = dt->low, high = dt->high, pivot = dt->pivot;
+    int *i = dt->i;
     double **matrix = dt->matrix;
+    pthread_mutex_t *mutex_i = dt->mutex_i;
 
-    int piece = (high - low + 1) / 2;
-
-    if(current_level < last_level){
-
-        DadosThreadQuickSort dt[2];
-        pthread_t threads[2];
-
-        int i;
-        for(i = 0; i < 2; i++){
-            dt[i].matrix = matrix;
-            dt[i].current_level = current_level + 1;
-            dt[i].last_level = last_level;
-        }
-        dt[0].low = low;
-        dt[0].high = piece - 1 + low;
-        dt[1].low = piece + low;
-        dt[1].high = high;
-
-        pthread_create(&threads[0], NULL, trabalho_thread_quick_sort, (void *) (dt + 0));
-        pthread_create(&threads[1], NULL, trabalho_thread_quick_sort, (void *) (dt + 1));
-
-        pthread_join(threads[0], NULL);		
-        pthread_join(threads[1], NULL);		
-
-        quickSort(matrix, low, high);
-        
-    }else {
-        quickSort(matrix, low, piece - 1 + low);
-        quickSort(matrix, piece + low, high);
+    for (int j = low; j < high; j++){
+        pthread_mutex_lock(mutex_i);
+        (*i)++;
+        pthread_mutex_unlock(mutex_i);
+        swap(&matrix[0][(*i)], &matrix[0][j]);
+    }
+    {
 
     }
-    pthread_exit(NULL);
+}
+
+
+int partition_paralelo(double **matrix, int low, int high, int current_level, int last_level)
+{
+    int random = low + rand() % (high - low);
+    swap(&matrix[0][random], &matrix[0][high]);
+
+    double pivot = matrix[0][high];
+    int *i;
+    (*i) = low - 1;
+
+    int nthreads = pow((last_level - current_level), 2);
+    int *partes = divide_em_partes((high - low), nthreads);
+
+    DadosThreadQuickSort dt[nthreads];
+    pthread_t threads[nthreads];
+
+    for (int j = low; j <= high - 1; j++)
+    {
+        if (matrix[0][j] < pivot)
+        {
+            i++;
+            swap(&matrix[0][i], &matrix[0][j]);
+        }
+    }
+
+
+    swap(&matrix[0][i + 1], &matrix[0][high]);
+    return (i + 1);
 }
 
 void *quickSort_paralelo(void *_dt)
@@ -56,8 +60,8 @@ void *quickSort_paralelo(void *_dt)
 
     if (low < high)
     {
-        int pi = partition(matrix, low, high);
         if(current_level < last_level){
+            int pi = partition_paralelo(matrix, low, high, current_level, last_level);
 
             DadosThreadQuickSort dt[2];
             pthread_t threads[2];
@@ -79,6 +83,8 @@ void *quickSort_paralelo(void *_dt)
             pthread_join(threads[0], NULL);
             pthread_join(threads[1], NULL);
         }else{
+            int pi = partition(matrix, low, high);
+
             quickSort(matrix, low, pi - 1);
             quickSort(matrix, pi + 1, high);
         }
