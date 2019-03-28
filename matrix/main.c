@@ -9,8 +9,6 @@ double wtime();
 
 int main(int argc, char *argv[])
 {
-	srand(time(NULL));
-
 	int nthreads, nrows, ncols;
 	double start_time, end_time;
 
@@ -22,10 +20,11 @@ int main(int argc, char *argv[])
 	nrows = atoi(argv[2]);
 	ncols = atoi(argv[3]);
 
-	double s = 0.0, t, m;
-
-	printf("Quick Paralelo %d Threads:\n", nthreads);
-	// printf("Quick Serial:\n");
+	if(nthreads == 0){
+		printf("QuickSort Serial:\n");
+	}else{
+		printf("QuickSort Paralelo %d threads:\n", nthreads);
+	}
 	int i;
 	for(i = 1; i <= 1; i++){
 
@@ -34,40 +33,33 @@ int main(int argc, char *argv[])
 		matrix_t *B = matrix_create(nrows, ncols);
 		matrix_randfill(B);
 
+		matrix_t *M;
+
 		start_time = wtime();
-		// matrix_t *M = matrix_sum(A, B);
-		// matrix_t *M = matrix_sum_paralelo(A, B, nthreads);
-		// matrix_t *M = matrix_multiply(A, B);
-		matrix_t *M = matrix_multiplicacao_paralelo(A, B, nthreads);
-		// matrix_t *M = matrix_sort_quick(A);
-		// matrix_t *M = matrix_sort_quick_paralelo(A, nthreads);
+		if (nthreads == 0){
+			M = matrix_multiply(A, B);
+		}else{
+			M = matrix_multiply_paralelo(A, B, nthreads);
+		}
 		end_time = wtime();
 
-		// matrix_print(A);
-		// matrix_print(B);
-		// matrix_print(M);
-
+		matrix_print(A);
+		matrix_print(B);
+		matrix_print(M);
 		matrix_destroy(A);
 		matrix_destroy(B);
 		matrix_destroy(M);
-
 		
-		t = end_time - start_time;
-		s += t;
+		double t = end_time - start_time;
 		printf("%f\n", t);
 	}
-
-	m = s / 10;
-	printf("\nMedia:\n%lf\n", m);
-
 	return EXIT_SUCCESS;
 	
 	
 }
 
 
-double wtime()
-{
+double wtime(){
    struct timeval t;
    gettimeofday(&t, NULL);
    return t.tv_sec + t.tv_usec / 1000000.0;

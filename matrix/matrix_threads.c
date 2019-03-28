@@ -2,8 +2,7 @@
 #include "matrix_threads.h"
 
 
-void *trabalho_thread_soma(void *_dt)
-{
+void *trabalho_thread_soma(void *_dt){
 	DadosThread *dt = (DadosThread*) _dt;
 
 	int nrows, ncols, lowerbound, upperbound;
@@ -21,17 +20,13 @@ void *trabalho_thread_soma(void *_dt)
 	pthread_exit(NULL);
 }
 
-void *trabalho_thread_multiplicao(void *_dt)
-{
+void *trabalho_thread_multiplicao(void *_dt){
 	DadosThread *dt = (DadosThread*) _dt;
 	
 	int arows, acols, brows, bcols, lowerbound, upperbound;
-	arows = dt->A->rows;
-	acols = dt->A->cols;
-	brows = dt->B->rows;
-	bcols = dt->B->cols;
-	lowerbound = dt->lowerbound;
-	upperbound = dt->upperbound;
+	arows = dt->A->rows, acols = dt->A->cols;
+	brows = dt->B->rows, bcols = dt->B->cols;
+	lowerbound = dt->lowerbound, upperbound = dt->upperbound;
 
 	int i, j, k;
 	for(i = lowerbound; i < upperbound; i++){
@@ -44,43 +39,35 @@ void *trabalho_thread_multiplicao(void *_dt)
 	pthread_exit(NULL);
 }
 
-matrix_t *matrix_sum_paralelo(matrix_t *A, matrix_t *B, int nthreads){
-
-
-	int i, k = 0, nrows = A->rows;
-	int *bounds = (int*)malloc(sizeof(int) * nthreads);
-	if(nthreads > nrows) nthreads = nrows;
-	for(i = 0; i < nthreads; i++){
+int *calcula_numero_linhas_para_thread(int nrows, int nthreads){
+	int i, k = 0;
+	int *bounds = (int *)malloc(sizeof(int) * nthreads);
+	if (nthreads > nrows)
+		nthreads = nrows;
+	for (i = 0; i < nthreads; i++){
 		bounds[i] = nrows / nthreads;
 		k += bounds[i];
 	}
-	if(k != nrows){
-		for(i = 0; i < nrows - k; i++){
+	if (k != nrows){
+		for (i = 0; i < nrows - k; i++)
+		{
 			bounds[i]++;
 		}
 	}
+	return bounds;
+}
 
+matrix_t *matrix_sum_paralelo(matrix_t *A, matrix_t *B, int nthreads){
+
+	int *bounds = calcula_numero_linhas_para_thread(A->rows, nthreads);
 	
 	matrix_t *C = matrix_create(A->rows, A->cols);
 
+	DadosThread dt[nthreads];
+	pthread_t threads[nthreads];
 
-	DadosThread *dt = NULL;
-	pthread_t *threads = NULL;
-	if (!(dt = (DadosThread *)malloc(sizeof(DadosThread) * nthreads)))
-	{
-		printf("Erro ao alocar memória\n");
-		exit(EXIT_FAILURE);
-	}
-	if (!(threads = (pthread_t *)malloc(sizeof(pthread_t) * nthreads)))
-	{
-		printf("Erro ao alocar memória\n");
-		exit(EXIT_FAILURE);
-	}
-
-
-	k = 0;
+	int k = 0, i = 0;
 	for(i = 0; i < nthreads; i++){
-		dt[i].id = i;
 		dt[i].A = A;
 		dt[i].B = B;
 		dt[i].C = C;
@@ -92,49 +79,21 @@ matrix_t *matrix_sum_paralelo(matrix_t *A, matrix_t *B, int nthreads){
 	for (i = 0; i < nthreads; i++) {
 		pthread_join(threads[i], NULL);		
 	}
-
 	return C;
-	
 }
 
+matrix_t *matrix_multiply_paralelo(matrix_t *A, matrix_t *B, int nthreads)
+{
 
-matrix_t *matrix_multiplicacao_paralelo(matrix_t *A, matrix_t *B, int nthreads){
+	int *bounds = calcula_numero_linhas_para_thread(A->rows, nthreads);
 
-
-	int i, k = 0, nrows = A->rows;
-	int *bounds = (int*)malloc(sizeof(int) * nthreads);
-	if(nthreads > nrows) nthreads = nrows;
-	for(i = 0; i < nthreads; i++){
-		bounds[i] = nrows / nthreads;
-		k += bounds[i];
-	}
-	if(k != nrows){
-		for(i = 0; i < nrows - k; i++){
-			bounds[i]++;
-		}
-	}
-
-	
 	matrix_t *C = matrix_create(A->rows, A->cols);
 
+	DadosThread dt[nthreads];
+	pthread_t threads[nthreads];
 
-	DadosThread *dt = NULL;
-	pthread_t *threads = NULL;
-	if (!(dt = (DadosThread *)malloc(sizeof(DadosThread) * nthreads)))
-	{
-		printf("Erro ao alocar memória\n");
-		exit(EXIT_FAILURE);
-	}
-	if (!(threads = (pthread_t *)malloc(sizeof(pthread_t) * nthreads)))
-	{
-		printf("Erro ao alocar memória\n");
-		exit(EXIT_FAILURE);
-	}
-
-
-	k = 0;
+	int i = 0, k = 0;
 	for(i = 0; i < nthreads; i++){
-		dt[i].id = i;
 		dt[i].A = A;
 		dt[i].B = B;
 		dt[i].C = C;
@@ -146,7 +105,5 @@ matrix_t *matrix_multiplicacao_paralelo(matrix_t *A, matrix_t *B, int nthreads){
 	for (i = 0; i < nthreads; i++) {
 		pthread_join(threads[i], NULL);		
 	}
-
 	return C;
-	
 }
