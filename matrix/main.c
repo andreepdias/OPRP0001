@@ -22,9 +22,12 @@ int main(int argc, char *argv[])
 	nrows = atoi(argv[2]);
 	ncols = atoi(argv[3]);
 
+	double s = 0.0, t, m;
+
 	printf("Soma Paralelo %d Threads:\n", nthreads);
+	printf("Soma Serial\n");
 	int i;
-	// for(i = 1; i <= 10; i++){
+	for(i = 1; i <= 10; i++){
 		start_time = wtime();
 
 		matrix_t *A = matrix_create(nrows, ncols);
@@ -32,23 +35,25 @@ int main(int argc, char *argv[])
 		matrix_t *B = matrix_create(nrows, ncols);
 		matrix_randfill(B);
 		
-		// matrix_t *M = matrix_sum(A, B);
-		matrix_t *M = matrix_create(nrows, ncols);
-		matrix_randfill(M);
+		matrix_t *M = matrix_sum(A, B);
 
 		// matrix_print(A);
 		// matrix_print(B);
-		matrix_print(M);
+		// matrix_print(M);
 
 		matrix_destroy(A);
 		matrix_destroy(B);
-		// matrix_destroy(M);
+		matrix_destroy(M);
 
 		end_time = wtime();
 		
-		printf("%f\n", end_time - start_time);
-	// }
+		t = end_time - start_time;
+		s += t;
+		printf("%f\n", t);
+	}
 
+	m = s / 10;
+	printf("\nMedia:\n%lf\n", m);
 
 	return EXIT_SUCCESS;
 	

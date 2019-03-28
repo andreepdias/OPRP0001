@@ -5,7 +5,7 @@
 void *trabalho_thread_soma(void *_dt)
 {
 	DadosThread *dt = (DadosThread*) _dt;
-	
+
 	int nrows, ncols, lowerbound, upperbound;
 	nrows = dt->A->rows;
 	ncols = dt->A->cols;
@@ -15,7 +15,6 @@ void *trabalho_thread_soma(void *_dt)
 	int i, j;
 	for(i = lowerbound; i < upperbound; i++){
 		for(j = 0; j < ncols; j++){
-			// printf("id:%d\ti:%d\tj:%d\n", dt->id, i, j);
 			dt->C->matrix[i][j] = dt->A->matrix[i][j] + dt->B->matrix[i][j];
 		}
 	}
@@ -46,7 +45,7 @@ void *trabalho_thread_multiplicao(void *_dt)
 }
 
 matrix_t *matrix_sum_paralelo(matrix_t *A, matrix_t *B, int nthreads){
-	
+
 
 	int i, k = 0, nrows = A->rows;
 	int *bounds = (int*)malloc(sizeof(int) * nthreads);
@@ -64,6 +63,7 @@ matrix_t *matrix_sum_paralelo(matrix_t *A, matrix_t *B, int nthreads){
 	
 	matrix_t *C = matrix_create(A->rows, A->cols);
 
+
 	DadosThread *dt = NULL;
 	pthread_t *threads = NULL;
 	if (!(dt = (DadosThread *)malloc(sizeof(DadosThread) * nthreads)))
@@ -76,6 +76,7 @@ matrix_t *matrix_sum_paralelo(matrix_t *A, matrix_t *B, int nthreads){
 		printf("Erro ao alocar memória\n");
 		exit(EXIT_FAILURE);
 	}
+
 
 	k = 0;
 	for(i = 0; i < nthreads; i++){
@@ -91,5 +92,7 @@ matrix_t *matrix_sum_paralelo(matrix_t *A, matrix_t *B, int nthreads){
 	for (i = 0; i < nthreads; i++) {
 		pthread_join(threads[i], NULL);		
 	}
+
+	return C;
 	
 }

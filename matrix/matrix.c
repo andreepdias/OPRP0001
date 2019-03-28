@@ -13,6 +13,7 @@ matrix_t *matrix_create(int rows, int cols)
     for(i = 0; i < rows; i++){
         m->matrix[i] = &temp[i * cols];
     }
+    
     return m;
 }
 
@@ -79,7 +80,6 @@ void matrix_print(matrix_t *m)
 {
    int i, j;
    for (i = 0; i < m->rows; i++) {
-    printf("oi\n");
       for (j = 0; j < m->cols; j++) {
          printf("%.17f ", m->matrix[i][j]);
       }
