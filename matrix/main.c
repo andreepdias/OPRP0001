@@ -30,32 +30,24 @@ int main(int argc, char *argv[])
 
 		matrix_t *A = matrix_create(nrows, ncols);
 		matrix_randfill(A);
-		matrix_t *B = matrix_create(nrows, ncols);
-		matrix_randfill(B);
 
 		matrix_t *M;
 
 		start_time = wtime();
 		if (nthreads == 0){
-			M = matrix_multiply(A, B);
+			M = matrix_sort_quick(A);
 		}else{
-			M = matrix_multiply_paralelo(A, B, nthreads);
+			M = matrix_sort_quick_paralelo(A, nthreads);
 		}
 		end_time = wtime();
 
-		matrix_print(A);
-		matrix_print(B);
-		matrix_print(M);
+		// matrix_print(A);
 		matrix_destroy(A);
-		matrix_destroy(B);
-		matrix_destroy(M);
 		
 		double t = end_time - start_time;
 		printf("%f\n", t);
 	}
 	return EXIT_SUCCESS;
-	
-	
 }
 
 
