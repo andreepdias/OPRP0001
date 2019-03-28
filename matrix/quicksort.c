@@ -9,12 +9,13 @@ void swap(double* a, double* b)
   
 int partition (double **matrix, int low, int high) 
 { 
-    int r = (rand() % (high - low)) + low + 1;
-    printf("high:%d\tlow:%d\tr:%d\n", high, low, r);
-    double pivot = matrix[0][r];   
+    int random = low + rand() % (high - low);
+    swap(&matrix[0][random], &matrix[0][high]); 
+    // printf("high:%d\tlow:%d\tr:%d\n", high, low, r);
+    double pivot = matrix[0][high];   
     // printf("low:%d\thigh:%d\tr:%d\n", low, high, r);
 
-    int i = (low - 1);  
+    int i = (low - 1), cont = 0;  
   
     for (int j = low; j <= high - 1; j++) 
     { 
@@ -22,9 +23,12 @@ int partition (double **matrix, int low, int high)
         { 
             i++;   
             swap(&matrix[0][i], &matrix[0][j]); 
+            // cont++;
         } 
     }
-    swap(&matrix[0][i + 1], &matrix[0][r]);
+    swap(&matrix[0][i + 1], &matrix[0][high]);
+    // cont++;
+    // printf("Numero de Swaps: %d\n", cont);
     return (i + 1); 
 } 
 

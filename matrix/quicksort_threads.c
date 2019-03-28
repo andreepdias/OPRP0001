@@ -14,13 +14,13 @@ void *trabalho_thread_quick_sort(void *_dt)
     int last_level = dt->last_level;
     int n = dt->n;
     double **matrix;
-    matrix = *(dt->matrix);
+    matrix = (dt->matrix);
 
     int piece = (high - low + 1) / 2;
     // printf("Id: %d\nCurrent Level: %d\tLast Level:%d\nlow:%d\thigh:%d\npiece:%d\n\n", id, current_level, last_level, low, high, piece);
 
 
-    if(current_level < last_level && current_level < 3){
+    if(current_level < last_level){
 
         DadosThreadQuickSort *dt = NULL;
         pthread_t *threads = NULL;
@@ -36,7 +36,7 @@ void *trabalho_thread_quick_sort(void *_dt)
         int i;
         for(i = 0; i < 2; i++){
             dt[i].id = pow(10, current_level) + i;
-            dt[i].matrix = &matrix;
+            dt[i].matrix = matrix;
             dt[i].current_level = current_level + 1;
             dt[i].last_level = last_level;
             dt[i].n = n;
@@ -92,14 +92,15 @@ void *trabalho_thread_quick_sort(void *_dt)
         }
         */
     }
+    pthread_exit(NULL);
 
 } 
 
 
 matrix_t *matrix_sort_quick_paralelo(matrix_t *A, int nthreads)
 {
-    printf("oi\n");
-    matrix_t *m = matrix_clone(A);
+    // printf("oi\n");
+    matrix_t *m = A;
 
     int n = A->rows * A->cols;
     int depth = (int)log2(nthreads);
@@ -119,7 +120,7 @@ matrix_t *matrix_sort_quick_paralelo(matrix_t *A, int nthreads)
     // printf("INICIANDO: Current: %d\tLast: %d\n", 1, depth);
 
     dt[0].id = 0;
-    dt[0].matrix = &(m->matrix);
+    dt[0].matrix = (m->matrix);
     dt[0].current_level = 0;
     dt[0].last_level = depth;
     dt[0].low = 0;

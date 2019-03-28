@@ -32,12 +32,13 @@ int main(int argc, char **argv){
       // matrix_t *res = matrix_sum_parallel(tmp_block, tmp_block, matrix_create_block, nthreads);
       // matrix_t *res = matrix_multiply_parallel(tmp_block, tmp_block, matrix_create_block, nthreads);
       // matrix_t *res = matrix_sum(a, b, matrix_create_block);
-      matrix_t *res = matrix_sum_parallel(a, b, matrix_create_block, nthreads);
+      // matrix_t *res = matrix_sum_parallel(a, b, matrix_create_block, nthreads);
       // matrix_t *res = matrix_multiply(tmp_block, tmp_block, matrix_create_block);
+      matrix_print(a);
 
       matrix_destroy_block(a);
       matrix_destroy_block(b);
-      matrix_destroy_block(res);
+      // matrix_destroy_block(res);
 
       // matrix_destroy_pointers(tmp_pointers);
 

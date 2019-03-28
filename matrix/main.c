@@ -24,18 +24,24 @@ int main(int argc, char *argv[])
 
 	double s = 0.0, t, m;
 
-	printf("Soma Paralelo %d Threads:\n", nthreads);
-	printf("Soma Serial\n");
+	printf("Quick Paralelo %d Threads:\n", nthreads);
+	// printf("Quick Serial:\n");
 	int i;
-	for(i = 1; i <= 10; i++){
-		start_time = wtime();
+	for(i = 1; i <= 1; i++){
 
 		matrix_t *A = matrix_create(nrows, ncols);
 		matrix_randfill(A);
 		matrix_t *B = matrix_create(nrows, ncols);
 		matrix_randfill(B);
-		
-		matrix_t *M = matrix_sum(A, B);
+
+		start_time = wtime();
+		// matrix_t *M = matrix_sum(A, B);
+		// matrix_t *M = matrix_sum_paralelo(A, B, nthreads);
+		// matrix_t *M = matrix_multiply(A, B);
+		matrix_t *M = matrix_multiplicacao_paralelo(A, B, nthreads);
+		// matrix_t *M = matrix_sort_quick(A);
+		// matrix_t *M = matrix_sort_quick_paralelo(A, nthreads);
+		end_time = wtime();
 
 		// matrix_print(A);
 		// matrix_print(B);
@@ -45,7 +51,6 @@ int main(int argc, char *argv[])
 		matrix_destroy(B);
 		matrix_destroy(M);
 
-		end_time = wtime();
 		
 		t = end_time - start_time;
 		s += t;

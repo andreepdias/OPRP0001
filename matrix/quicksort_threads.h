@@ -5,7 +5,7 @@
 
 typedef struct {
 	int id;
-	double ***matrix;
+	double **matrix;
 	int low;
 	int high;
 	int current_level;
