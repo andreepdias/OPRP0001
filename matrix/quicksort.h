@@ -6,5 +6,6 @@
 
 void quickSort(double **matrix, int low, int high);
 matrix_t *matrix_sort_quick(matrix_t *A);
+int partition(double **matrix, int low, int high);
 
 #endif
