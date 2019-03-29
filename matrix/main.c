@@ -26,7 +26,8 @@ int main(int argc, char *argv[])
 		printf("QuickSort Paralelo %d threads:\n", nthreads);
 	}
 	int i;
-	for(i = 1; i <= 1; i++){
+	double soma = 0;
+	for(i = 1; i <= 10; i++){
 
 		matrix_t *A = matrix_create(nrows, ncols);
 		matrix_randfill(A);
@@ -41,12 +42,14 @@ int main(int argc, char *argv[])
 		}
 		end_time = wtime();
 
-		matrix_print(A);
+		// matrix_print(A);
 		matrix_destroy(A);
 		
 		double t = end_time - start_time;
+		soma += t;
 		printf("%f\n", t);
 	}
+	printf("Media:\n%lf\n", soma / 10);
 	return EXIT_SUCCESS;
 }
 
