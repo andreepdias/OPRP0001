@@ -1,22 +1,3 @@
-# GNU Makefile
+all:
+	gcc main.c matrix.c quicksort.c quicksort_threads.c mergesort.c mergesort_threads.c quick_and_merge_threads.c matrix_threads.c -pthread -lm -o s
 
-CC = gcc 
-CCFLAGS = -Wall 
-LDFLAGS = 
-TARGET = main
-
-%.o: %.c
-	$(CC) $(CCFLAGS) -c $<
-
-%: %.o
-	$(CC) $(LDFLAGS) $^ -o $@ 
-
-all: $(TARGET)
-
-# Dependencias
-
-main: matrix.o main.c
-matrix.o: matrix.c matrix.h
-
-clean:
-	rm -f *.o *~ $(TARGET)

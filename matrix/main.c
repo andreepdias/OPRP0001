@@ -1,33 +1,37 @@
-//gcc main.c matrix.c quicksort.c quicksort_threads.c matrix_threads.c -pthread -lm -o s
-
 #include "matrix.h"
 #include "matrix_threads.h"
+// #include "quick_and_merge_threads.h"
 #include "quicksort_threads.h"
 #include "quicksort.h"
+#include "mergesort.h"
+#include "mergesort_threads.h"
 
 double wtime();
 
 int main(int argc, char *argv[])
 {
-	int nthreads, nrows, ncols;
+	int nthreads, nrows, ncols, nruns;
 	double start_time, end_time;
 
-	if (argc < 4) {
-		printf("%s <nthreads> <rows> <cols>\n", argv[0]);
+	if (argc < 5) {
+		printf("%s <nthreads> <nruns> <rows> <cols>\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 	nthreads = atoi(argv[1]);
-	nrows = atoi(argv[2]);
-	ncols = atoi(argv[3]);
+	nruns = atoi(argv[2]);
+	nrows = atoi(argv[3]);
+	ncols = atoi(argv[4]);
 
 	if(nthreads == 0){
-		printf("QuickSort Serial:\n");
+		printf("Merge Serial:\n");
 	}else{
-		printf("QuickSort Paralelo %d threads:\n", nthreads);
+		printf("Merge Paralelo %d threads:\n", nthreads);
 	}
 	int i;
-	double soma = 0;
-	for(i = 1; i <= 10; i++){
+	double t, soma = 0, media = 0, desvio = 0;
+	double tempos[nruns];
+	for (i = 0; i < nruns; i++)
+	{
 
 		matrix_t *A = matrix_create(nrows, ncols);
 		matrix_randfill(A);
@@ -36,9 +40,9 @@ int main(int argc, char *argv[])
 
 		start_time = wtime();
 		if (nthreads == 0){
-			M = matrix_sort_quick(A);
+			M = matrix_sort_merge(A);
 		}else{
-			M = matrix_sort_quick_paralelo(A, nthreads);
+			M = matrix_sort_merge_paralelo(A, nthreads);
 		}
 		end_time = wtime();
 
@@ -46,10 +50,18 @@ int main(int argc, char *argv[])
 		matrix_destroy(A);
 		
 		double t = end_time - start_time;
+		tempos[i] = t;
 		soma += t;
-		printf("%f\n", t);
+		printf("%lf\n",t);
 	}
-	printf("Media:\n%lf\n", soma / 10);
+	media = soma / nruns;
+	for (i = 0; i < nruns; i++){
+		desvio += pow((tempos[i] - media), 2);
+	}
+	desvio = sqrt(desvio / nruns);
+	printf("Media:\t%lf\nDesvio:\t%lf\n", media, desvio);
+
+
 	return EXIT_SUCCESS;
 }
 

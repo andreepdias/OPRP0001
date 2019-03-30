@@ -3,8 +3,7 @@
 
 #include "matrix.h"
 
-typedef struct
-{
+typedef struct {
 	double **matrix;
 	int low;
 	int high;

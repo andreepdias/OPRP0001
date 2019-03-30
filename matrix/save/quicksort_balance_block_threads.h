@@ -8,8 +8,9 @@ typedef struct
 	double **matrix;
 	int low;
 	int high;
-	int current_level;
-	int last_level;
+	int size_block;
+	int *nthreads;
+	pthread_mutex_t *mutex_nthreads;
 } DadosThreadQuickSort;
 
 matrix_t *matrix_sort_quick_paralelo(matrix_t *A, int nthreads);
