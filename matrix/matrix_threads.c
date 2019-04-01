@@ -31,6 +31,7 @@ void *trabalho_thread_multiplicao(void *_dt){
 	int i, j, k;
 	for(i = lowerbound; i < upperbound; i++){
 		for(j = 0; j < bcols; j++){
+			dt->C->matrix[i][j] = 0;
 			for(k = 0; k < acols; k++){
 				dt->C->matrix[i][j] += dt->A->matrix[i][k] * dt->B->matrix[k][j];
 			}
@@ -57,12 +58,10 @@ int *divide_em_partes(int nrows, int nthreads){
 	return bounds;
 }
 
-matrix_t *matrix_sum_paralelo(matrix_t *A, matrix_t *B, int nthreads){
+matrix_t *matrix_sum_paralelo(matrix_t *A, matrix_t *B, matrix_t *M, int nthreads){
 
 	int *bounds = divide_em_partes(A->rows, nthreads);
 	
-	matrix_t *C = matrix_create(A->rows, A->cols);
-
 	DadosThread dt[nthreads];
 	pthread_t threads[nthreads];
 
@@ -70,7 +69,7 @@ matrix_t *matrix_sum_paralelo(matrix_t *A, matrix_t *B, int nthreads){
 	for(i = 0; i < nthreads; i++){
 		dt[i].A = A;
 		dt[i].B = B;
-		dt[i].C = C;
+		dt[i].C = M;
 		dt[i].lowerbound = k;
 		dt[i].upperbound = bounds[i] + k;
 		k = dt[i].upperbound;
@@ -79,15 +78,13 @@ matrix_t *matrix_sum_paralelo(matrix_t *A, matrix_t *B, int nthreads){
 	for (i = 0; i < nthreads; i++) {
 		pthread_join(threads[i], NULL);		
 	}
-	return C;
+	return M;
 }
 
-matrix_t *matrix_multiply_paralelo(matrix_t *A, matrix_t *B, int nthreads)
+matrix_t *matrix_multiply_paralelo(matrix_t *A, matrix_t *B, matrix_t *M, int nthreads)
 {
 
 	int *bounds = divide_em_partes(A->rows, nthreads);
-
-	matrix_t *C = matrix_create(A->rows, A->cols);
 
 	DadosThread dt[nthreads];
 	pthread_t threads[nthreads];
@@ -96,7 +93,7 @@ matrix_t *matrix_multiply_paralelo(matrix_t *A, matrix_t *B, int nthreads)
 	for(i = 0; i < nthreads; i++){
 		dt[i].A = A;
 		dt[i].B = B;
-		dt[i].C = C;
+		dt[i].C = M;
 		dt[i].lowerbound = k;
 		dt[i].upperbound = bounds[i] + k;
 		k = dt[i].upperbound;
@@ -105,5 +102,5 @@ matrix_t *matrix_multiply_paralelo(matrix_t *A, matrix_t *B, int nthreads)
 	for (i = 0; i < nthreads; i++) {
 		pthread_join(threads[i], NULL);		
 	}
-	return C;
+	return M;
 }

@@ -46,33 +46,29 @@ void matrix_fill(matrix_t *m, double val)
    }
 }
 
-matrix_t *matrix_sum(matrix_t *A, matrix_t *B)
+matrix_t *matrix_sum(matrix_t *A, matrix_t *B, matrix_t *M)
 {
-    matrix_t *m = matrix_create(A->rows, A->cols);
-
     int i, j;
     for(i = 0; i < A->rows; i++){
         for(j = 0; j < A->cols; j++){
-            m->matrix[i][j] = A->matrix[i][j] + B->matrix[i][j];
+            M->matrix[i][j] = A->matrix[i][j] + B->matrix[i][j];
         }
     }
-    return m;
+    return M;
 }
 
-matrix_t *matrix_multiply(matrix_t *A, matrix_t *B)
+matrix_t *matrix_multiply(matrix_t *A, matrix_t *B, matrix_t *M)
 {
-    matrix_t *m = matrix_create(A->rows, B->cols);
-    matrix_fill(m, 0);
-
     int i, j, k;
     for(i = 0; i < A->rows; i++){
         for(j = 0; j < B->cols; j++){
+            M->matrix[i][j] = 0;
             for(k = 0; k < A->cols; k++){
-                m->matrix[i][j] += A->matrix[i][k] + B->matrix[k][j];
+                M->matrix[i][j] += A->matrix[i][k] + B->matrix[k][j];
             }
         }
     }
-    return m;
+    return M;
 }
 
 void matrix_print(matrix_t *m)
