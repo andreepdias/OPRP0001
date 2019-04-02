@@ -25,37 +25,35 @@ int main(int argc, char *argv[])
 	int i, k = 0;
 	double t, soma, media, desvio;
 
-	for(k = 1; k <= 9; k++){
+	for(k = 0; k <= 9; k++){
 		if(k == 9) k = 16;
 		nthreads = k;
 		double tempos[nruns];
+
+		soma = 0;
 		if(nthreads == 0){
-			printf("Multiply Serial:\n");
+			printf("QuickSort Serial:\n");
 		}else{
-			printf("Multiply Paralelo %d threads:\n", nthreads);
+			printf("QuickSort Paralelo %d threads:\n", nthreads);
 		}
 		for (i = 0; i < nruns; i++)
 		{
 
 			matrix_t *A = matrix_create(nrows, ncols);
 			matrix_randfill(A);
-			matrix_t *B = matrix_create(nrows, ncols);
-			matrix_randfill(B);
 
-			matrix_t *M = matrix_create(nrows, ncols);
+			matrix_t *M;
 
 			start_time = wtime();
 			if (nthreads == 0){
-				M = matrix_multiply(A, B, M);
+				M = matrix_sort_quick(A);
 			}else{
-				M = matrix_multiply_paralelo(A, B, M, nthreads);
+				M = matrix_sort_quick_paralelo(A, nthreads);
 			}
 			end_time = wtime();
 
 			// matrix_print(A);
 			matrix_destroy(A);
-			matrix_destroy(B);
-			matrix_destroy(M);
 			
 			double t = end_time - start_time;
 			tempos[i] = t;

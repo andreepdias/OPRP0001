@@ -25,6 +25,7 @@ Multiply Paralelo 1 threads:
 78.704941
 Media:	79.015636
 Desvio:	0.798479
+
 Multiply Paralelo 2 threads:
 39.542044
 40.086687
@@ -38,6 +39,7 @@ Multiply Paralelo 2 threads:
 39.346159
 Media:	118.577136
 Desvio:	79.016523
+
 Multiply Paralelo 3 threads:
 26.877378
 27.210654
@@ -51,6 +53,7 @@ Multiply Paralelo 3 threads:
 26.549081
 Media:	145.568011
 Desvio:	118.611249
+
 Multiply Paralelo 4 threads:
 20.228151
 20.219528
@@ -64,6 +67,7 @@ Multiply Paralelo 4 threads:
 21.683490
 Media:	165.945391
 Desvio:	145.609557
+
 Multiply Paralelo 5 threads:
 22.760854
 22.539018
@@ -77,6 +81,7 @@ Multiply Paralelo 5 threads:
 22.460059
 Media:	188.413540
 Desvio:	165.989352
+
 Multiply Paralelo 6 threads:
 18.901841
 19.215449
@@ -90,6 +95,7 @@ Multiply Paralelo 6 threads:
 19.653583
 Media:	207.606581
 Desvio:	188.457726
+
 Multiply Paralelo 7 threads:
 18.166584
 18.183497
@@ -103,6 +109,7 @@ Multiply Paralelo 7 threads:
 18.143164
 Media:	225.617806
 Desvio:	207.652044
+
 Multiply Paralelo 8 threads:
 16.636040
 17.062887
@@ -116,11 +123,16 @@ Multiply Paralelo 8 threads:
 16.731415
 Media:	242.297242
 Desvio:	225.663896
+
 Multiply Paralelo 16 threads:
 17.251703
+17.251652
 17.487825
-17.298439
+17.298259
+17.298437
 17.376024
+17.374073
 17.374068
 17.619212
 17.535268
+Media: 17.3866741
