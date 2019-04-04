@@ -1,3 +1,3 @@
 all:
-	gcc main.c matrix.c quicksort.c quicksort_threads.c mergesort.c mergesort_threads.c matrix_threads.c -pthread -lm -o s
+	gcc matrix.c matrix_threads.c mergesort.c quicksort.c main.c -pthread -lm -o s -fopenmp
 

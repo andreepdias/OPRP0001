@@ -1,3 +1,5 @@
+//escalonamento / tamanho pedaço / flag compilação
+
 #include "matrix.h"
 
 matrix_t *matrix_create(int rows, int cols)
@@ -57,9 +59,36 @@ matrix_t *matrix_sum(matrix_t *A, matrix_t *B, matrix_t *M)
     return M;
 }
 
+matrix_t *matrix_sum_openmp(matrix_t *A, matrix_t *B, matrix_t *M)
+{
+    int i, j;
+    #pragma omp for schedule(dynamic)
+    for(i = 0; i < A->rows; i++){
+        for(j = 0; j < A->cols; j++){
+            M->matrix[i][j] = A->matrix[i][j] + B->matrix[i][j];
+        }
+    }
+    return M;
+}
+
 matrix_t *matrix_multiply(matrix_t *A, matrix_t *B, matrix_t *M)
 {
     int i, j, k;
+    for(i = 0; i < A->rows; i++){
+        for(j = 0; j < B->cols; j++){
+            M->matrix[i][j] = 0;
+            for(k = 0; k < A->cols; k++){
+                M->matrix[i][j] += A->matrix[i][k] + B->matrix[k][j];
+            }
+        }
+    }
+    return M;
+}
+
+matrix_t *matrix_multiply_openmp(matrix_t *A, matrix_t *B, matrix_t *M)
+{
+    int i, j, k;
+    #pragma omp for schedule(dynamic)
     for(i = 0; i < A->rows; i++){
         for(j = 0; j < B->cols; j++){
             M->matrix[i][j] = 0;

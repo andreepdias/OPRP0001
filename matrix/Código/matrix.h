@@ -44,4 +44,8 @@ matrix_t *matrix_sum(matrix_t *A, matrix_t *B, matrix_t *M);
 
 matrix_t *matrix_sort_bubble(matrix_t *A);
 
+matrix_t *matrix_sum_openmp(matrix_t *A, matrix_t *B, matrix_t *M);
+
+matrix_t *matrix_multiply_openmp(matrix_t *A, matrix_t *B, matrix_t *M);
 #endif 
+

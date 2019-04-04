@@ -1,3 +1,4 @@
+#include <omp.h>
 #include "matrix.h"
 
 void merge(double **matrix, int low, int mid, int high)
@@ -70,6 +71,45 @@ matrix_t *matrix_sort_merge(matrix_t *A)
     int n = A->rows * A->cols;
 
     mergeSort(A->matrix, 0, n - 1);
+
+    return A;
+}
+
+void mergeSort_openmp(double **matrix, int low, int high, int current_level, int last_level)
+{
+    if (low < high)
+    {
+        int mid = low + (high - low) / 2;
+
+        // printf("current: %d\tlast: %d\t\tlow: %d\thigh: %d\n", current_level, last_level, low, high);
+        if(current_level < last_level){
+            omp_set_nested(1);
+            #pragma omp parallel num_threads(2)
+            {
+                #pragma omp sections nowait
+                {
+                    #pragma omp section
+                    mergeSort_openmp(matrix, low, mid, current_level + 1, last_level);
+
+                    #pragma omp section
+                    mergeSort_openmp(matrix, mid + 1, high, current_level + 1, last_level);
+                }
+
+            }
+
+        }else{
+            mergeSort(matrix, low, mid);
+            mergeSort(matrix, mid + 1, high);
+        }
+        merge(matrix, low, mid, high);
+    }
+}
+
+matrix_t *matrix_sort_merge_openmp(matrix_t *A, int current_level, int last_level)
+{
+    int n = A->rows * A->cols;
+
+    mergeSort_openmp(A->matrix, 0, n - 1, current_level, last_level);
 
     return A;
 }

@@ -1,3 +1,4 @@
+#include <omp.h>
 #include "matrix.h"
 
 void swap(double* a, double* b) { 
@@ -64,6 +65,42 @@ matrix_t *matrix_sort_quick(matrix_t *A)
     int n = A->rows * A->cols; 
 
     quickSort(A->matrix, 0, n - 1); 
+
+    return A;
+}
+
+void quickSort_openmp(double **matrix, int low, int high, int current_level, int last_level){
+    if (low < high) { 
+        int pi = partition(matrix, low, high); 
+  
+        if(current_level < last_level){
+            omp_set_nested(1);
+            #pragma omp parallel num_threads(2)
+            {
+                #pragma omp sections nowait
+                {
+                    #pragma omp section
+                    quickSort_openmp(matrix, low, pi, current_level + 1, last_level);
+
+                    #pragma omp section
+                    quickSort_openmp(matrix, pi + 1, high, current_level + 1, last_level);
+                }
+
+            }
+
+        }else{
+            quickSort(matrix, low, pi);
+            quickSort(matrix, pi + 1, high);
+        }
+    }
+} 
+
+
+matrix_t *matrix_sort_quick_openmp(matrix_t *A, int current_level, int last_level)
+{
+    int n = A->rows * A->cols;
+
+    quickSort_openmp(A->matrix, 0, n - 1, current_level, last_level);
 
     return A;
 }

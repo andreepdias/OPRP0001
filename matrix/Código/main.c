@@ -1,10 +1,12 @@
+//gcc main.c matrix.c quicksort.c quicksort_threads.c mergesort.c mergesort_threads.c matrix_threads.c -pthread -lm -o s
 #include "matrix.h"
 #include "matrix_threads.h"
 // #include "quick_and_merge_threads.h"
-#include "quicksort_threads.h"
-#include "quicksort.h"
+// #include "quicksort_threads.h"
+// #include "quicksort.h"
 #include "mergesort.h"
-#include "mergesort_threads.h"
+#include "quicksort.h"
+#include <omp.h>
 
 double wtime();
 
@@ -25,8 +27,8 @@ int main(int argc, char *argv[])
 	int i, k = 0;
 	double t, soma, media, desvio;
 
-	for(k = 0; k <= 9; k++){
-		if(k == 9) k = 16;
+	for(int k = 0; k <= 9; k++){
+		if(k != nthreads) continue;
 		nthreads = k;
 		double tempos[nruns];
 
@@ -41,19 +43,35 @@ int main(int argc, char *argv[])
 
 			matrix_t *A = matrix_create(nrows, ncols);
 			matrix_randfill(A);
+			// matrix_t *B = matrix_create(nrows, ncols);
+			// matrix_randfill(B);
 
+			// matrix_t *M = matrix_create(nrows, ncols);
 			matrix_t *M;
 
 			start_time = wtime();
-			if (nthreads == 0){
+
+			if(nthreads == 0){
+				// M = matrix_sum(A, B, M);
+				// M = matrix_multiply(A, B, M);
+				// M = matrix_sort_merge(A);
 				M = matrix_sort_quick(A);
 			}else{
-				M = matrix_sort_quick_paralelo(A, nthreads);
+				// #pragma omp parallel num_threads (nthreads) shared (A, B, M)
+
+				int last_level = (int)log2(nthreads);
+				int current_level = 0;
+				// M = matrix_sum_openmp(A, B, M);
+				// M = matrix_multiply_openmp(A, B, M);
+				M = matrix_sort_quick_openmp(A, current_level, last_level);
 			}
+
 			end_time = wtime();
 
 			// matrix_print(A);
 			matrix_destroy(A);
+			// matrix_destroy(B);
+			// matrix_destroy(M);
 			
 			double t = end_time - start_time;
 			tempos[i] = t;
