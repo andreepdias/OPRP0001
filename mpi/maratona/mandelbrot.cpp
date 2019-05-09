@@ -56,7 +56,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	MPI_Gather((temp + (rank * interval * max_column)), interval * max_column, MPI_CHAR, (temp + (rank * interval * max_column)), interval * max_column, MPI_CHAR, 0, MPI_COMM_WORLD);
+	int block = interval * max_column;
+	MPI_Gather((temp + (rank * block)), block, MPI_CHAR, (temp + (rank * block)), block, MPI_CHAR, 0, MPI_COMM_WORLD);
 
 	if (rank == 0)
 	{
