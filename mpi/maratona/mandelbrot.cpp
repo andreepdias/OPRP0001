@@ -29,13 +29,10 @@ int main(int argc, char **argv)
 	int begin = rank * interval;
 	int end = begin + interval;
 
-	if (rank == size - 1)
-	{
-		end = max_row;
-	}
-
-	char *temp = (char *)malloc(sizeof(char) * (interval * size) * max_column);
-	char **mat = (char **)malloc(sizeof(char *) * max_row);
+	char *temp = new char[interval * size * max_column];
+	char **mat = new char *[max_row];
+	// char *temp = (char *)malloc(sizeof(char) * (interval * size) * max_column);
+	// char **mat = (char **)malloc(sizeof(char *) * max_row);
 	for (int i = 0; i < max_row; i++)
 	{
 		mat[i] = &temp[i * max_column];
