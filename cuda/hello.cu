@@ -7,9 +7,8 @@ const char STR_LENGTH = 12;
 
 __global__ void hello()
 {
-    # if __CUDA_ARCH__>=200
         printf("%c\n", STR[threadIdx.x % STR_LENGTH]);
-    #endif  
+
 }
 
 int main(void){
