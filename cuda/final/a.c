@@ -12,3 +12,15 @@ int main(void)
   puts(password);
   return 0;
 }
+
+/*
+le arquivo no processo principal
+distribui as senhas entre os hosts
+*/
+
+FkfcaxTSAzB4g
+
+300
+
+
+3
