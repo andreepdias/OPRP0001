@@ -70,22 +70,32 @@ int main(int argc, char ** argv){
     char* buffer = (char*) malloc(sizeof(char)*9);
 
     long numero_possibilidades;
-    for(tamanho_cifra =1 ; tamanho_cifra <= tamanho_maximo_cifra; tamanho_cifra++){
+    for(tamanho_cifra = 1 ; tamanho_cifra <= tamanho_maximo_cifra; tamanho_cifra++){
         numero_possibilidades += std::pow(ABC_SIZE, tamanho_cifra); 
     }
 
-    long rank_slice = numero_possibilidades/size; //quanto cada rank vai processar
-    while(numero_cifras--){
-        char* cifra = strdup(cifras_str.substr(cifra_atual*13, cifra_atual*13+13).c_str());
+    long rank_slice = numero_possibilidades / size; //quanto cada rank vai processar
 
-        for(i = rank_slice*rank; i < rank_slice; i++){
+    if(numero_possibilidades % size != 0){
+        printf("Sobrou %ld\n", numero_possibilidades % size);
+    }
+
+    while(numero_cifras--){
+        char* cifra = strdup(cifras_str.substr(cifra_atual * 13, 13).c_str());
+
+        for(i = rank_slice * rank; i < (rank_slice * rank) + rank_slice; i++){
+
             char* palavra = strdup(number2word(i).c_str()); //Talvez seja bom colocar a função inline depois
+
             if(strcmp(crypt(palavra, cifra), cifra) == 0){
+                
                 cout << "Rank " << rank << " cifra:" << cifra_atual << " senha:" << string(palavra) << endl;
+                
                 for(int j = 0; j < size; j++){
                     if(j != rank)
                         MPI_Send(palavra, strlen(palavra), MPI_CHAR, j, tag, MPI_COMM_WORLD);
                 }
+
                 // MPI_Bcast(palavra, strlen(palavra)+1, MPI_CHAR, rank, MPI_COMM_WORLD);
                 break;
 
@@ -94,14 +104,15 @@ int main(int argc, char ** argv){
             // break;
             MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);
             if(flag){
-                // cout << "Rank estou aqui " << rank << endl; 
                 MPI_Recv(buffer, 9, MPI_CHAR, status.MPI_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                // cout << "Rank estou aqui " << rank << endl; 
                 flag = false;
                 break;
             }
         }
-        // cout << "Rank " << rank << " cifra:" << cifra_atual << endl;
+        // cout << "Pre-Barrier: Rank " << rank << " cifra:" << cifra_atual << endl;
         MPI_Barrier(MPI_COMM_WORLD);
+        // cout << "Pos-Barrier: Rank " << rank << " cifra:" << cifra_atual << endl;
         cifra_atual++;
     }
 
@@ -118,14 +129,17 @@ string number2word(long num){
     //14 (abc(4)abc(7))  = 4*64^1 + 7*64^0 = 263 
     //263 = dividir sucessivamente, como de decimal para binário
     stringstream palavra_ss;
+
     ldiv_t temp;
     temp.quot = num;
+
     while(temp.quot != 0){
         temp = ldiv(temp.quot, ABC_SIZE);
-        palavra_ss << alfabeto[temp.rem-1];
+        palavra_ss << alfabeto[temp.rem - 1];
     } 
     string palavra = palavra_ss.str();
     reverse(palavra.begin(), palavra.end());
+
     return palavra;
 }
 
