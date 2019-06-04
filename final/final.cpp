@@ -20,7 +20,8 @@ string number2word(long num);
 int main(int argc, char ** argv){
 
     int *sndbuffer, recvbuffer;
-    int rank, size, i, tag = 0;
+    int rank, size, tag = 0;
+    long long int i;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -67,25 +68,28 @@ int main(int argc, char ** argv){
     
     MPI_Status status;
     int flag = false;
-    char* buffer = (char*) malloc(sizeof(char)*9);
+    // char* buffer = (char*) malloc(sizeof(char)*9);
+    int buffer = 0;
 
-    long numero_possibilidades;
+
+    long long int numero_possibilidades = 0;
     for(tamanho_cifra = 1 ; tamanho_cifra <= tamanho_maximo_cifra; tamanho_cifra++){
         numero_possibilidades += std::pow(ABC_SIZE, tamanho_cifra); 
     }
 
-    long rank_slice = numero_possibilidades / size; //quanto cada rank vai processar
+
+    long long int rank_slice = numero_possibilidades / size; //quanto cada rank vai processar
 
     if(numero_possibilidades % size != 0){
         printf("Sobrou %ld\n", numero_possibilidades % size);
     }
 
     while(numero_cifras--){
-        char* cifra = strdup(cifras_str.substr(cifra_atual * 13, 13).c_str());
+        const char* cifra = cifras_str.substr(cifra_atual * 13, 13).c_str();
 
         for(i = rank_slice * rank; i < (rank_slice * rank) + rank_slice; i++){
 
-            char* palavra = strdup(number2word(i).c_str()); //Talvez seja bom colocar a função inline depois
+            const char* palavra = number2word(i).c_str(); //Talvez seja bom colocar a função inline depois
 
             if(strcmp(crypt(palavra, cifra), cifra) == 0){
                 
@@ -93,7 +97,7 @@ int main(int argc, char ** argv){
                 
                 for(int j = 0; j < size; j++){
                     if(j != rank)
-                        MPI_Send(palavra, strlen(palavra), MPI_CHAR, j, tag, MPI_COMM_WORLD);
+                        MPI_Send(&buffer, 1, MPI_INT, j, tag, MPI_COMM_WORLD);
                 }
 
                 // MPI_Bcast(palavra, strlen(palavra)+1, MPI_CHAR, rank, MPI_COMM_WORLD);
@@ -104,11 +108,12 @@ int main(int argc, char ** argv){
             // break;
             MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);
             if(flag){
-                MPI_Recv(buffer, 9, MPI_CHAR, status.MPI_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                MPI_Recv(&buffer, 1, MPI_INT, status.MPI_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
                 // cout << "Rank estou aqui " << rank << endl; 
                 flag = false;
                 break;
             }
+            
         }
         // cout << "Pre-Barrier: Rank " << rank << " cifra:" << cifra_atual << endl;
         MPI_Barrier(MPI_COMM_WORLD);
