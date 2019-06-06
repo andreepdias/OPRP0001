@@ -16,6 +16,7 @@ const char alfabeto[ABC_SIZE+1] = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFG
 
 using namespace std;
 
+
 void number2word(long num, char* palavra);
 string number2word(long num);
 
@@ -31,6 +32,8 @@ int main(int argc, char ** argv){
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     int cifrassize;
+
+    struct crypt_data cd;
 
     char *cifras;
 
@@ -76,30 +79,54 @@ int main(int argc, char ** argv){
     char* palavra = (char*) malloc(sizeof(9)); //8 chars (no máximo) + \0
 
 
+    /*
     long int numero_possibilidades = 0;
     for(tamanho_cifra = 1 ; tamanho_cifra <= tamanho_maximo_cifra; tamanho_cifra++){
         numero_possibilidades += std::pow(ABC_SIZE, tamanho_cifra); 
     }
-
 
     long int rank_slice = numero_possibilidades / size; //quanto cada rank vai processar
 
     if(numero_possibilidades % size != 0){
         printf("Sobrou %ld\n", numero_possibilidades % size);
     }
+    */
 
     while(numero_cifras--){
         for(tamanho_cifra = 1; tamanho_cifra <= tamanho_maximo_cifra; tamanho_cifra++){
+
             long num_palavras_tamanho = std::pow(ABC_SIZE, tamanho_cifra);
-            rank_slice = num_palavras_tamanho / size;
-            for(i = rank_slice * rank; i < (rank_slice * rank) + rank_slice; i++){
+
+            long num_palavras_tamanho_anterior = 0;
+            if(tamanho_cifra > 1){
+                for(int i = 1; i < tamanho_cifra-1; i++)
+                    num_palavras_tamanho_anterior += std::pow(ABC_SIZE, i);
+            }
+
+            long int rank_slice = num_palavras_tamanho / size;
+
+
+            long int begin = num_palavras_tamanho_anterior + rank_slice * rank;
+            long int end = num_palavras_tamanho_anterior + (rank_slice * rank) + rank_slice;
+
+            if(rank == 0){
+                 printf("#ZERO# ABC_SIZE: %d\ttamanho_cifra: %d\n#ZERO# rank_slice: %ld\tnum_palavras_tamanho: %ld\tsize: %d\tbegin: %ld\tend: %ld\n", ABC_SIZE, tamanho_cifra, rank_slice, num_palavras_tamanho, size, begin, end);
+            }
+
+            if(rank == size - 1){
+                end = num_palavras_tamanho;
+            }
+
+            for(i = begin; i < end; i++){
                 const char* cifra = cifras_str.substr(cifra_atual * 13, 13).c_str();
 
                 number2word(i,palavra); //Talvez seja bom colocar a função inline depois
 
-                if(strcmp(crypt(palavra, cifra), cifra) == 0){
+                if(strcmp(crypt_r(palavra, cifra, &cd), cifra) == 0){
                     
-                    cout << "Rank " << rank << " cifra:" << cifra_atual << " senha:" << string(palavra) << endl;
+                     if(rank == 0){
+                        printf("Rank: %2d\tcifra: %3d\tsenha: %s\ti: %15ld\tbegin: %15ld\tend: %15ld\n", rank, cifra_atual, palavra, i, begin, end);
+                     }
                     
                     for(int j = 0; j < size; j++){
                         if(j != rank)
