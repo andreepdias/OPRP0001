@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include <string> 
+#include <string.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -11,17 +12,19 @@
 
 #define ABC_SIZE 64
 
-const char alfabeto[65] = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const char alfabeto[ABC_SIZE+1] = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 using namespace std;
 
+void number2word(long num, char* palavra);
 string number2word(long num);
+
 
 int main(int argc, char ** argv){
 
     int *sndbuffer, recvbuffer;
     int rank, size, tag = 0;
-    long long int i;
+    long int i;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -70,15 +73,16 @@ int main(int argc, char ** argv){
     int flag = false;
     // char* buffer = (char*) malloc(sizeof(char)*9);
     int buffer = 0;
+    char* palavra = (char*) malloc(sizeof(9)); //8 chars (no máximo) + \0
 
 
-    long long int numero_possibilidades = 0;
+    long int numero_possibilidades = 0;
     for(tamanho_cifra = 1 ; tamanho_cifra <= tamanho_maximo_cifra; tamanho_cifra++){
         numero_possibilidades += std::pow(ABC_SIZE, tamanho_cifra); 
     }
 
 
-    long long int rank_slice = numero_possibilidades / size; //quanto cada rank vai processar
+    long int rank_slice = numero_possibilidades / size; //quanto cada rank vai processar
 
     if(numero_possibilidades % size != 0){
         printf("Sobrou %ld\n", numero_possibilidades % size);
@@ -89,7 +93,7 @@ int main(int argc, char ** argv){
 
         for(i = rank_slice * rank; i < (rank_slice * rank) + rank_slice; i++){
 
-            const char* palavra = number2word(i).c_str(); //Talvez seja bom colocar a função inline depois
+            number2word(i,palavra); //Talvez seja bom colocar a função inline depois
 
             if(strcmp(crypt(palavra, cifra), cifra) == 0){
                 
@@ -128,6 +132,31 @@ int main(int argc, char ** argv){
     return 0;
     
 
+}
+
+void number2word(long num, char* palavra){
+    //14 (abc(4)abc(7))  = 4*64^1 + 7*64^0 = 263 
+    //263 = dividir sucessivamente, como de decimal para binário
+    // stringstream palavra_ss;
+    char palavra_inv[9];
+    int cont = 0;
+
+    ldiv_t temp;
+    temp.quot = num;
+
+    while(temp.quot != 0){
+        temp = ldiv(temp.quot, ABC_SIZE);
+        palavra_inv[cont] = alfabeto[temp.rem - 1];
+        cont++;
+    } 
+    palavra_inv[cont] = '\0';
+    // string palavra = palavra_ss.str();
+    // reverse(palavra.begin(), palavra.end());
+    //Inverte palavra
+    for(int i = 0, j = cont-1; i < cont+1; i++, j--){
+        palavra[i] = palavra_inv[j]; 
+    }
+    palavra[cont] = '\0';
 }
 
 string number2word(long num){
