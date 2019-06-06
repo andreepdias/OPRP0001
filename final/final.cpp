@@ -89,36 +89,40 @@ int main(int argc, char ** argv){
     }
 
     while(numero_cifras--){
-        const char* cifra = cifras_str.substr(cifra_atual * 13, 13).c_str();
+        for(tamanho_cifra = 1; tamanho_cifra <= tamanho_maximo_cifra; tamanho_cifra++){
+            long num_palavras_tamanho = std::pow(ABC_SIZE, tamanho_cifra);
+            rank_slice = num_palavras_tamanho / size;
+            for(i = rank_slice * rank; i < (rank_slice * rank) + rank_slice; i++){
+                const char* cifra = cifras_str.substr(cifra_atual * 13, 13).c_str();
 
-        for(i = rank_slice * rank; i < (rank_slice * rank) + rank_slice; i++){
+                number2word(i,palavra); //Talvez seja bom colocar a função inline depois
 
-            number2word(i,palavra); //Talvez seja bom colocar a função inline depois
+                if(strcmp(crypt(palavra, cifra), cifra) == 0){
+                    
+                    cout << "Rank " << rank << " cifra:" << cifra_atual << " senha:" << string(palavra) << endl;
+                    
+                    for(int j = 0; j < size; j++){
+                        if(j != rank)
+                            MPI_Send(&buffer, 1, MPI_INT, j, tag, MPI_COMM_WORLD);
+                    }
 
-            if(strcmp(crypt(palavra, cifra), cifra) == 0){
-                
-                cout << "Rank " << rank << " cifra:" << cifra_atual << " senha:" << string(palavra) << endl;
-                
-                for(int j = 0; j < size; j++){
-                    if(j != rank)
-                        MPI_Send(&buffer, 1, MPI_INT, j, tag, MPI_COMM_WORLD);
+                    // MPI_Bcast(palavra, strlen(palavra)+1, MPI_CHAR, rank, MPI_COMM_WORLD);
+                    goto found;
+
                 }
-
-                // MPI_Bcast(palavra, strlen(palavra)+1, MPI_CHAR, rank, MPI_COMM_WORLD);
-                break;
-
+                // MPI_Bcast(buffer, 9, MPI_CHAR, MPI_ANY_SOURCE, MPI_COMM_WORLD);
+                // break;
+                MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);
+                if(flag){
+                    MPI_Recv(&buffer, 1, MPI_INT, status.MPI_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                    // cout << "Rank estou aqui " << rank << endl; 
+                    flag = false;
+                    goto found;
+                }
+                
             }
-            // MPI_Bcast(buffer, 9, MPI_CHAR, MPI_ANY_SOURCE, MPI_COMM_WORLD);
-            // break;
-            MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);
-            if(flag){
-                MPI_Recv(&buffer, 1, MPI_INT, status.MPI_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-                // cout << "Rank estou aqui " << rank << endl; 
-                flag = false;
-                break;
-            }
-            
         }
+        found:
         // cout << "Pre-Barrier: Rank " << rank << " cifra:" << cifra_atual << endl;
         MPI_Barrier(MPI_COMM_WORLD);
         // cout << "Pos-Barrier: Rank " << rank << " cifra:" << cifra_atual << endl;
