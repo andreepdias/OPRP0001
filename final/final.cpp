@@ -9,6 +9,8 @@
 #include <cmath>
 #include <algorithm>
 #include <crypt.h>
+#include <atomic>
+#include <omp.h>
 
 #define ABC_SIZE 64
 
@@ -33,7 +35,6 @@ int main(int argc, char ** argv){
 
     int cifrassize;
 
-    struct crypt_data cd;
 
     char *cifras;
 
@@ -76,8 +77,9 @@ int main(int argc, char ** argv){
     int flag = false;
     // char* buffer = (char*) malloc(sizeof(char)*9);
     int buffer = 0;
-    char* palavra = (char*) malloc(sizeof(9)); //8 chars (no máximo) + \0
+    char palavra[9]; //8 chars (no máximo) + \0
 
+    bool decifrou_palavra;
 
     /*
     long int numero_possibilidades = 0;
@@ -93,6 +95,7 @@ int main(int argc, char ** argv){
     */
 
     while(numero_cifras--){
+
         for(tamanho_cifra = 1; tamanho_cifra <= tamanho_maximo_cifra; tamanho_cifra++){
 
             long num_palavras_tamanho = std::pow(ABC_SIZE, tamanho_cifra);
@@ -117,39 +120,63 @@ int main(int argc, char ** argv){
                 end = num_palavras_tamanho;
             }
 
-            for(i = begin; i < end; i++){
-                const char* cifra = cifras_str.substr(cifra_atual * 13, 13).c_str();
+            const long N = end - begin;
+            atomic<bool> go(false);
+            long give = begin;
 
-                number2word(i,palavra); //Talvez seja bom colocar a função inline depois
+            #pragma omp parallel private(palavra)
+            {
+                struct crypt_data cd;
 
-                if(strcmp(crypt_r(palavra, cifra, &cd), cifra) == 0){
-                    
-                    //  if(rank == 0){
-                    printf("Rank: %2d\tcifra: %3d\tsenha: %s\ti: %15ld\tbegin: %15ld\tend: %15ld\n", rank, cifra_atual, palavra, i, begin, end);
-                    //  }
-                    
-                    for(int j = 0; j < size; j++){
-                        if(j != rank)
-                            MPI_Send(&buffer, 1, MPI_INT, j, tag, MPI_COMM_WORLD);
+                int id = omp_get_thread_num();
+                long i, stop;
+
+                #pragma omp critical
+                {
+                    i = give;
+                    give += N / omp_get_num_threads();
+                    stop = give;
+
+                    if (omp_get_thread_num() == omp_get_num_threads() - 1)
+                        stop = end;
+                }
+
+                while (i < stop && !go)
+                {
+                    const char *cifra = cifras_str.substr(cifra_atual * 13, 13).c_str();
+
+                    number2word(i, palavra); //Talvez seja bom colocar a função inline depois
+                    // printf("id: %d\ti: %s\t%s\n", id, palavra, cifra);
+
+                    if (strcmp(crypt_r(palavra, cifra, &cd), cifra) == 0)
+                    {
+                        printf("Rank: %2d\tcifra: %3d\tsenha: %s\ti: %15ld\tbegin: %15ld\tend: %15ld\n", rank, cifra_atual, palavra, i, begin, end);
+                        go = true;
+                        for (int j = 0; j < size; j++)
+                        {
+                            if (j != rank)
+                                MPI_Send(&buffer, 1, MPI_INT, j, tag, MPI_COMM_WORLD);
+                        }
+
                     }
-
-                    // MPI_Bcast(palavra, strlen(palavra)+1, MPI_CHAR, rank, MPI_COMM_WORLD);
-                    goto found;
-
+                    if (id == 0)
+                    {
+                        MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);
+                        if (flag)
+                        {
+                            go = true;
+                            MPI_Recv(&buffer, 1, MPI_INT, status.MPI_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                            flag = false;
+                        }
+                    }
+                    i++;
                 }
-                // MPI_Bcast(buffer, 9, MPI_CHAR, MPI_ANY_SOURCE, MPI_COMM_WORLD);
-                // break;
-                MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);
-                if(flag){
-                    MPI_Recv(&buffer, 1, MPI_INT, status.MPI_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-                    // cout << "Rank estou aqui " << rank << endl; 
-                    flag = false;
-                    goto found;
-                }
-                
             }
+            if(go){
+                break;
+            }
+
         }
-        found:
         // cout << "Pre-Barrier: Rank " << rank << " cifra:" << cifra_atual << endl;
         MPI_Barrier(MPI_COMM_WORLD);
         // cout << "Pos-Barrier: Rank " << rank << " cifra:" << cifra_atual << endl;
