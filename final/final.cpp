@@ -99,7 +99,7 @@ int main(int argc, char ** argv){
 
             long num_palavras_tamanho_anterior = 0;
             if(tamanho_cifra > 1){
-                for(int i = 1; i < tamanho_cifra-1; i++)
+                for(int i = 1; i < tamanho_cifra; i++)
                     num_palavras_tamanho_anterior += std::pow(ABC_SIZE, i);
             }
 
@@ -109,9 +109,9 @@ int main(int argc, char ** argv){
             long int begin = num_palavras_tamanho_anterior + rank_slice * rank;
             long int end = num_palavras_tamanho_anterior + (rank_slice * rank) + rank_slice;
 
-            if(rank == 0){
-                 printf("#ZERO# ABC_SIZE: %d\ttamanho_cifra: %d\n#ZERO# rank_slice: %ld\tnum_palavras_tamanho: %ld\tsize: %d\tbegin: %ld\tend: %ld\n", ABC_SIZE, tamanho_cifra, rank_slice, num_palavras_tamanho, size, begin, end);
-            }
+            // if(rank == 0){
+            //      printf("#ZERO# ABC_SIZE: %d\ttamanho_cifra: %d\n#ZERO# rank_slice: %ld\tnum_palavras_tamanho: %ld\tsize: %d\tbegin: %ld\tend: %ld\n", ABC_SIZE, tamanho_cifra, rank_slice, num_palavras_tamanho, size, begin, end);
+            // }
 
             if(rank == size - 1){
                 end = num_palavras_tamanho;
@@ -124,9 +124,9 @@ int main(int argc, char ** argv){
 
                 if(strcmp(crypt_r(palavra, cifra, &cd), cifra) == 0){
                     
-                     if(rank == 0){
-                        printf("Rank: %2d\tcifra: %3d\tsenha: %s\ti: %15ld\tbegin: %15ld\tend: %15ld\n", rank, cifra_atual, palavra, i, begin, end);
-                     }
+                    //  if(rank == 0){
+                    printf("Rank: %2d\tcifra: %3d\tsenha: %s\ti: %15ld\tbegin: %15ld\tend: %15ld\n", rank, cifra_atual, palavra, i, begin, end);
+                    //  }
                     
                     for(int j = 0; j < size; j++){
                         if(j != rank)
@@ -165,30 +165,61 @@ int main(int argc, char ** argv){
 
 }
 
-void number2word(long num, char* palavra){
-    //14 (abc(4)abc(7))  = 4*64^1 + 7*64^0 = 263 
-    //263 = dividir sucessivamente, como de decimal para binário
-    // stringstream palavra_ss;
+void number2word(long num, char *palavra)
+{
     char palavra_inv[9];
     int cont = 0;
 
-    ldiv_t temp;
-    temp.quot = num;
-
-    while(temp.quot != 0){
-        temp = ldiv(temp.quot, ABC_SIZE);
-        palavra_inv[cont] = alfabeto[temp.rem - 1];
-        cont++;
-    } 
-    palavra_inv[cont] = '\0';
-    // string palavra = palavra_ss.str();
-    // reverse(palavra.begin(), palavra.end());
-    //Inverte palavra
-    for(int i = 0, j = cont-1; i < cont+1; i++, j--){
-        palavra[i] = palavra_inv[j]; 
+    // First figure out how many digits there are.
+    num += 1; // This line is funky
+    int c = 0;
+    long x = 1;
+    while (num >= x)
+    {
+        c++;
+        num -= x;
+        x *= ABC_SIZE;
     }
-    palavra[cont] = '\0';
+
+    // Now you can do normal base conversion.
+    for (int i = 0; i < c; i++)
+    {
+        palavra_inv[i] = alfabeto[num % ABC_SIZE];
+        num = num / ABC_SIZE;
+    }
+    palavra_inv[9] = '\0';
+
+    for (int i = 0, j = c - 1; i < c; i++, j--)
+    {
+        palavra[i] = palavra_inv[j];
+    }
+    palavra[c] = '\0';
 }
+
+// void number2word(long num, char* palavra){
+//     //14 (abc(4)abc(7))  = 4*64^1 + 7*64^0 = 263 
+//     //263 = dividir sucessivamente, como de decimal para binário
+//     // stringstream palavra_ss;
+//     char palavra_inv[9];
+//     int cont = 0;
+
+//     ldiv_t temp;
+//     temp.quot = num;
+
+//     while(temp.quot != 0){
+//         temp = ldiv(temp.quot, ABC_SIZE);
+//         palavra_inv[cont] = alfabeto[temp.rem - 1];
+//         cont++;
+//     } 
+//     palavra_inv[cont] = '\0';
+//     // string palavra = palavra_ss.str();
+//     // reverse(palavra.begin(), palavra.end());
+//     //Inverte palavra
+//     for(int i = 0, j = cont-1; i < cont+1; i++, j--){
+//         palavra[i] = palavra_inv[j]; 
+//     }
+//     palavra[cont] = '\0';
+// }
 
 string number2word(long num){
     //14 (abc(4)abc(7))  = 4*64^1 + 7*64^0 = 263 
