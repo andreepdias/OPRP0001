@@ -1,0 +1,1 @@
+for i in $(cat $1);do ssh udesc@$i "pkill $2" ; done;
