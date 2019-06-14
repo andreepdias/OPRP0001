@@ -1,0 +1,12 @@
+antes de entrar no pragma for, cada rank passa pelo vetor de palavras (que já esta ordenado) e encontra onde começa cada salt, salvado essa posição em um novo vetor (alocado com tamanho do número de cifras, pra não faltar espaço)
+Ex: vetor de palavras = Fkavs AB123 traaa troav xaoioi
+	Vetor com posições dos salts: 0 1 2 4
+
+Agora ao invés de usar um map, podemos salvar os crypt_data num outro vetor de mesmo tamanho do vetor de posições, ou seja, acesso O(1)
+
+Dentro do pragma for, pra cada (palavra, cifra) que verificamos ele verifica qual o valor do contador do vetor de posições (incialmente 0, pra cada palavra testada), se o valor naquela posição (vet[cont]) for igual a cifra que estamos verificando agora, ele vê se já tem o crypt_data praquele salt e usa, senão cria um novo.
+
+Pra cada palavra, a gente só precisa encryptar ela com cada salt uma vez e testa pra cada cifra daquele salt, ou seja, pra cada salt, a gente faz um crypt pra testar n cifras, vai economizar muito tempo
+
+
+Com essa abordagem o for externo não vai mudar nada também
