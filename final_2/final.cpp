@@ -35,8 +35,8 @@ int main(int argc, char ** argv){
 
     int tamanho_todas_cifras;
 
-    struct crypt_data cd;
-    cd.initialized = 0;
+    // struct crypt_data cd;
+    // cd.initialized = 0;
 
     char *cifras;
     vector<string> lista_cifras;
@@ -86,7 +86,50 @@ int main(int argc, char ** argv){
     char palavra[9];
     char cifra[14];
     char salt[3];
+
+    int inicio_salts[numero_cifras];
+    for(int i = 0; i < numero_cifras; i++){
+        inicio_salts[i] = -1;
+    }
+    // memset(inicio_salts, -1, numero_cifras-1);
+    inicio_salts[0] = 0;
     
+    //Encontra onde começa cada salt (numero da cifra);
+    int n_salt = 1;
+    memcpy(cifra, cifras + 0 * tamanho_cifra, tamanho_cifra);
+    cifra[13] = '\0';
+    char salt_anterior[3];
+    memcpy(salt_anterior, cifra, 2);
+    salt_anterior[2] = '\0';
+    for(int i = 1; i < numero_cifras; i++){
+        memcpy(cifra, cifras + i * tamanho_cifra, tamanho_cifra);
+        cifra[13] = '\0';
+        memcpy(salt, cifra, 2);
+        salt[2] = '\0';
+        if(strcmp(salt, salt_anterior) != 0){
+            inicio_salts[n_salt] = i;
+            n_salt++;
+        }
+        strcpy(salt_anterior, salt);
+    }
+    inicio_salts[n_salt] = numero_cifras; 
+
+    // if(rank == 0){
+    //     for(int i = 0; i < n_salt+4; i++){
+    //         printf("%d ", inicio_salts[i]);
+    //     }
+    //     printf("\n");
+    // }
+
+
+    struct crypt_data cd[n_salt+1];
+    for(int i = 0; i < n_salt+1; i++){
+        cd[i].initialized = 0;
+        // memcpy(cifra, cifras + inicio_salts[i] * tamanho_cifra, tamanho_cifra);
+        // cifra[13] = '\0';
+        // crypt_r("a", cifra, &cd[i]);
+    }
+
     long int numero_possibilidades = 0;
     for(int i = 1 ; i <= tamanho_maximo_palavra; i++){
         numero_possibilidades += std::pow(ABC_SIZE, tamanho_cifra); 
@@ -109,15 +152,34 @@ int main(int argc, char ** argv){
 
     long end = numero_possibilidades;
     
-    map<char*, struct crypt_data*> salts;
+    // map<char*, struct crypt_data*> salts;
 
 
-    #pragma omp parallel for schedule(dynamic) shared(cifras, rank, size, end, tamanho_cifra, numero_cifras) private(salts, palavra, cifra, salt)
+    // #pragma omp parallel for schedule(dynamic) shared(cifras, rank, size, end, tamanho_cifra, numero_cifras) private(salts, palavra, cifra, salt)
     for(i = rank; i < end; i += size){
 
         number2word(i, palavra); // colocar INLINE
+        int salt_atual = 0;
+        while(inicio_salts[salt_atual+1] != -1){
+            //Percorre cifras de cada salt
+             memcpy(cifra, cifras + inicio_salts[salt_atual] * tamanho_cifra, tamanho_cifra);
+            cifra[13] = '\0';
+            const char* palavra_cifrada = crypt_r(palavra, cifra, &cd[salt_atual]); //cifra a palavra com o salt atual
 
-        for(int cifra_atual = 0; cifra_atual < numero_cifras; cifra_atual++){
+            for(int cifra_atual = inicio_salts[salt_atual]; cifra_atual < inicio_salts[salt_atual+1]; cifra_atual++){
+                // printf("palavra: %s\tcifra: %s\n", palavra, cifra);
+                memcpy(cifra, cifras + cifra_atual * tamanho_cifra, tamanho_cifra);
+                cifra[13] = '\0';
+                if(strcmp(cifra, palavra_cifrada) == 0){
+                    printf("Rank: %2d\tcifra(%3d): %s\tsenha: %s\n", rank, cifra_atual, cifra, palavra);
+                }
+            }
+            // printf("Salt atual:%d\n", salt_atual);
+            salt_atual++;
+
+        }
+
+       /* for(int cifra_atual = 0; cifra_atual < numero_cifras; cifra_atual++){
             
             memcpy(cifra, cifras + cifra_atual * tamanho_cifra, tamanho_cifra);
             cifra[13] = '\0';
@@ -142,7 +204,7 @@ int main(int argc, char ** argv){
                 printf("Rank: %2d\tcifra(%3d): %s\tsenha: %s\ti: %ld\n", rank, cifra_atual, cifra, palavra, i);
             }
             
-        }
+        }*/
     }
 
     MPI_Finalize();
