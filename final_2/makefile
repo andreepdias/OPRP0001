@@ -1,5 +1,5 @@
 build:
-	mpic++ final.cpp -O3 -lcrypt -fopenmp -o final
+	mpic++ final.cpp -O3 -lcrypt -fopenmp -pthread -o final
 	sh scp_executable.sh ips.txt final
 
 run:

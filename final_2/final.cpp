@@ -1,17 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <mpi.h>
-#include <string> 
 #include <string.h>
+#include <crypt.h>
+#include <pthread.h> 
+#include <omp.h>
+#include <mpi.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <string> 
 #include <cmath>
 #include <algorithm>
-#include <crypt.h>
 #include <vector>
-#include <algorithm>
-#include <omp.h>
 
 #define ABC_SIZE 64
 #define VERIFICAR 200
@@ -35,6 +35,8 @@ int main(int argc, char ** argv){
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Status status;
+
+    printf("KKKKKKKKKKKKk\n");
 
     int tamanho_todas_cifras;
 
@@ -143,72 +145,83 @@ int main(int argc, char ** argv){
     long end = numero_possibilidades;
     char cifra_encontrada_buffer[numero_cifras];
 
-    #pragma parallel sections
+    pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER; 
+    pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER; 
+
+    bool quebrou_alguma_senha = false;
+
+    
+    #pragma omp parallel
     {
-        #pragma omp section
+        omp_set_nested(1);
+        #pragma omp sections
         {
-
-        }
-
-        #pragma omp section
-        {
-            int quantos_loops = 0; //contador pra ver se tem que verificar cifras encontradas (o numero de loops é define VERIFICAR)
-            #pragma omp parallel for schedule(dynamic) shared(cifras, rank, size, end, tamanho_cifra, numero_cifras, inicio_salts, cifra_encontrada, cifra_encontrada_buffer, quantos_loops, status) private(palavra, cifra, cd)
-            for(i = rank; i < end; i += size){
-
-                int tid = omp_get_thread_num();
-                if(quantos_loops >= VERIFICAR and tid == 0){
-                    //Responsável por fazer a sincronização
-                    // {
-                        if(rank == 0){ //Receptor das mensagens
-                            int flag = false;
-                            MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);
-                            while(flag){
-                                MPI_Recv(cifra_encontrada_buffer, numero_cifras, MPI_CHAR, status.MPI_SOURCE, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                                for(int n = 0; n < numero_cifras; n++) 
-                                {
-                                    cifra_encontrada[n] = cifra_encontrada[n] | cifra_encontrada_buffer[n];
-                                }
-                                flag = false;
-                                MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);                    
-                            }
-                            MPI_Bcast(cifra_encontrada, numero_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
-
+            #pragma omp section
+            {
+                pthread_cond_wait(&cond1, &lock); 
+                if(rank == 0){ 
+                    int flag = false;
+                    MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);
+                    while(flag){
+                        MPI_Recv(cifra_encontrada_buffer, numero_cifras, MPI_CHAR, status.MPI_SOURCE, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                        for(int n = 0; n < numero_cifras; n++) 
+                        {
+                            cifra_encontrada[n] |= cifra_encontrada_buffer[n];
                         }
-                        else{ //Só busca a sincronização
-                            memcpy(cifra_encontrada_buffer, cifra_encontrada, numero_cifras);
-                            MPI_Send(cifra_encontrada_buffer, numero_cifras, MPI_CHAR, 0, tag, MPI_COMM_WORLD);
-                            MPI_Bcast(cifra_encontrada, numero_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
-                        }
-                    // }
-                    quantos_loops = 0;
+                        flag = false;
+                        MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);                    
+                    }
+                    MPI_Bcast(cifra_encontrada, numero_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
+
                 }
+                else{ //Só busca a sincronização
+                    if(quebrou_alguma_senha){
+                        memcpy(cifra_encontrada_buffer, cifra_encontrada, numero_cifras);
+                        MPI_Send(cifra_encontrada_buffer, numero_cifras, MPI_CHAR, 0, tag, MPI_COMM_WORLD);
+                    }
+                    quebrou_alguma_senha = false;
+                    MPI_Bcast(cifra_encontrada, numero_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
+                }
+            }
 
-                // printf("%d\n", cd[0].initialized);
+            #pragma omp section
+            {
+                int quantos_loops = 0; //contador pra ver se tem que verificar cifras encontradas (o numero de loops é define VERIFICAR)
+                #pragma omp parallel for schedule(dynamic) shared(cifras, rank, size, end, tamanho_cifra, numero_cifras, inicio_salts, cifra_encontrada, cifra_encontrada_buffer, quantos_loops, status) private(palavra, cifra, cd)
+                for(i = rank; i < end; i += size){
 
-                number2word(i, palavra); // colocar INLINE
-                int salt_atual = 0;
-                while(inicio_salts[salt_atual + 1] != -1){
-                    //Percorre cifras de cada salt
+                    number2word(i, palavra); // colocar INLINE
+                    int salt_atual = 0;
 
-                    cifra = cifras_vet[inicio_salts[salt_atual]];
+                    while(inicio_salts[salt_atual + 1] != -1){
+                        //Percorre cifras de cada salt
+                        cifra = cifras_vet[inicio_salts[salt_atual]];
 
-                    const char* palavra_cifrada = crypt_r(palavra, cifra, &cd[salt_atual]); //cifra a palavra com o salt atual
+                        const char* palavra_cifrada = crypt_r(palavra, cifra, &cd[salt_atual]); //cifra a palavra com o salt atual
 
-                    for(int cifra_atual = inicio_salts[salt_atual]; cifra_atual < inicio_salts[salt_atual + 1]; cifra_atual++){
-                        if(cifra_encontrada[cifra_atual]) continue;
+                        for(int cifra_atual = inicio_salts[salt_atual]; cifra_atual < inicio_salts[salt_atual + 1]; cifra_atual++){
+                            if(cifra_encontrada[cifra_atual]) continue;
 
-                        cifra = cifras_vet[cifra_atual];
-                        if(strcmp(cifra, palavra_cifrada) == 0){
-                            cifra_encontrada[cifra_atual] = 1;
-                            printf("Rank: %2d\tcifra(%3d): %s\tsenha: %s\n", rank, cifra_atual, cifra, palavra);
+                            cifra = cifras_vet[cifra_atual];
+                            if(strcmp(cifra, palavra_cifrada) == 0){
+                                quebrou_alguma_senha = true;
+                                cifra_encontrada[cifra_atual] = 1;
+                                printf("Rank: %2d\tcifra(%3d): %s\tsenha: %s\n", rank, cifra_atual, cifra, palavra);
+                            }
+                        }
+                        // printf("Salt atual:%d\n", salt_atual);
+                        salt_atual++;
+
+                    }
+                    int tid = omp_get_thread_num();
+                    if(tid == 0){
+                        quantos_loops++;
+                        if(quantos_loops == VERIFICAR){
+                            quantos_loops = 0;
+                            pthread_cond_signal(&cond1); 
                         }
                     }
-                    // printf("Salt atual:%d\n", salt_atual);
-                    salt_atual++;
-
                 }
-                quantos_loops++;
             }
         }
     }
