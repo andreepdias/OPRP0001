@@ -1,27 +1,36 @@
-#include <bits/stdc++.h>
+#include <stdio.h>
+#include <mpi.h>
+#include <stdlib.h>
+#include <string.h>
 #include <crypt.h>
-using namespace std;
+#include <pthread.h> 
+#include <omp.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string> 
+#include <cmath>
+#include <algorithm>
+#include <vector>
 
 #define ABC_SIZE 64
-const char alfabeto[65] = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+#define VERIFICAR 200
 
-int abc_power[9];
+const char alfabeto[ABC_SIZE+1] = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+using namespace std;
 
 
-int main(int argc, char **argv)
-{
+int main(int argc, char ** argv){
 
-    char* palavra = new char[9];
-    palavra[0] = 'a';
-    palavra[1] = 'a';
-    palavra[2] = 'a';
-    palavra[3] = '\0';
+    int rank, size;
 
-    map<char*, int> mapa;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    mapa[palavra] = 3;
+    printf("%d %d\n", rank, size);
 
-    cout << mapa[palavra] << endl;
-
+    MPI_Finalize();
 
 }

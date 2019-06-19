@@ -20,10 +20,68 @@ const char alfabeto[ABC_SIZE+1] = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFG
 
 using namespace std;
 
+typedef struct
+{
+    int rank;
+    pthread_cond_t *cond;
+    pthread_mutex_t *lock;
+    int numero_cifras;
+    char *cifra_encontrada;
+    bool *quebrou_alguma_senha;
+    bool *terminou_execucao;
+} DadosThread;
+
+
+void *thread_sincronizacao(void *_dt)
+{
+    DadosThread *dt = (DadosThread *)_dt;
+    
+    int rank = (*dt).rank;
+
+    pthread_cond_t *cond = (*dt).cond;
+    pthread_mutex_t *lock = (*dt).lock;
+    int numero_cifras = (*dt).numero_cifras;
+    char *cifra_encontrada = (*dt).cifra_encontrada;
+    bool *quebrou_alguma_senha = (*dt).quebrou_alguma_senha;    
+    bool *terminou_execucao = (*dt).terminou_execucao;
+    char cifra_encontrada_buffer[numero_cifras];
+
+    MPI_Status status;
+    int flag, tag = 0;;
+
+    while(!(*terminou_execucao)){
+        pthread_cond_wait(cond, lock); 
+        if(rank == 0){
+            flag = false;
+            MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);
+            while(flag){
+                MPI_Recv(cifra_encontrada_buffer, numero_cifras, MPI_CHAR, status.MPI_SOURCE, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                for(int n = 0; n < numero_cifras; n++) 
+                {
+                    cifra_encontrada[n] |= cifra_encontrada_buffer[n];
+                }
+                flag = false;
+                MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);                    
+            }
+            // *** processa salts com todas cifras resolvidas 
+            // bcast(salts_resolvidos -> buffer)
+
+            MPI_Bcast(cifra_encontrada, numero_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+        }
+        else{ //Só busca a sincronização
+            if((*quebrou_alguma_senha)){
+                memcpy(cifra_encontrada_buffer, cifra_encontrada, numero_cifras);
+                MPI_Send(cifra_encontrada_buffer, numero_cifras, MPI_CHAR, 0, tag, MPI_COMM_WORLD);
+            }
+            (*quebrou_alguma_senha) = false;
+            MPI_Bcast(cifra_encontrada, numero_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
+        }
+    }
+}
+
 
 void number2word(long num, char* palavra);
-string number2word(long num);
-
 
 int main(int argc, char ** argv){
 
@@ -35,8 +93,6 @@ int main(int argc, char ** argv){
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Status status;
-
-    printf("KKKKKKKKKKKKk\n");
 
     int tamanho_todas_cifras;
 
@@ -79,15 +135,13 @@ int main(int argc, char ** argv){
     MPI_Bcast(cifras, tamanho_todas_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
 
 
-
-
     int numero_cifras = (tamanho_todas_cifras - 1) / 13; //Número de palavras codificas (cifras) a processar
     int tamanho_cifra = 13;
 
-    char cifras_vet[numero_cifras][tamanho_cifra+1];
+    char cifras_vet[numero_cifras][tamanho_cifra + 1];
     for(int i = 0; i < numero_cifras; i++){
         for(int j = 0; j < tamanho_cifra; j++){
-            cifras_vet[i][j] = cifras[i*tamanho_cifra + j];
+            cifras_vet[i][j] = cifras[i * tamanho_cifra + j];
         }        
         cifras_vet[i][tamanho_cifra] = '\0';
     }
@@ -105,7 +159,6 @@ int main(int argc, char ** argv){
     for(int i = 0; i < numero_cifras; i++){
         inicio_salts[i] = -1;
     }
-    // memset(inicio_salts, -1, numero_cifras-1);
     inicio_salts[0] = 0;
     
 
@@ -145,88 +198,79 @@ int main(int argc, char ** argv){
     long end = numero_possibilidades;
     char cifra_encontrada_buffer[numero_cifras];
 
-    pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER; 
-    pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER; 
-
-    bool quebrou_alguma_senha = false;
+    bool *quebrou_alguma_senha = new bool;
+    (*quebrou_alguma_senha) = false;
 
     
-    #pragma omp parallel
-    {
-        omp_set_nested(1);
-        #pragma omp sections
-        {
-            #pragma omp section
-            {
-                pthread_cond_wait(&cond1, &lock); 
-                if(rank == 0){ 
-                    int flag = false;
-                    MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);
-                    while(flag){
-                        MPI_Recv(cifra_encontrada_buffer, numero_cifras, MPI_CHAR, status.MPI_SOURCE, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                        for(int n = 0; n < numero_cifras; n++) 
-                        {
-                            cifra_encontrada[n] |= cifra_encontrada_buffer[n];
-                        }
-                        flag = false;
-                        MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);                    
-                    }
-                    MPI_Bcast(cifra_encontrada, numero_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
+    /* Prepara Thread de Sincronização entre nós */
+    pthread_cond_t *cond = new pthread_cond_t;
+    (*cond) = PTHREAD_COND_INITIALIZER; 
 
-                }
-                else{ //Só busca a sincronização
-                    if(quebrou_alguma_senha){
-                        memcpy(cifra_encontrada_buffer, cifra_encontrada, numero_cifras);
-                        MPI_Send(cifra_encontrada_buffer, numero_cifras, MPI_CHAR, 0, tag, MPI_COMM_WORLD);
-                    }
-                    quebrou_alguma_senha = false;
-                    MPI_Bcast(cifra_encontrada, numero_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
+    pthread_mutex_t *lock = new pthread_mutex_t;
+    (*lock) = PTHREAD_MUTEX_INITIALIZER; 
+    
+    bool *terminou_execucao = new bool;
+    (*terminou_execucao) = false;
+
+    pthread_t thread;
+    DadosThread dt;
+
+    dt.rank = rank;
+    dt.cond = cond;
+    dt.lock = lock;
+    dt.numero_cifras = numero_cifras;
+    dt.cifra_encontrada = cifra_encontrada;
+    dt.quebrou_alguma_senha = quebrou_alguma_senha;
+    dt.terminou_execucao = terminou_execucao;
+
+    pthread_create(&thread, NULL, thread_sincronizacao, (void *)(&dt));
+    
+
+
+    int quantos_loops = 0; //contador pra ver se tem que verificar cifras encontradas (o numero de loops é define VERIFICAR)
+    #pragma omp parallel for schedule(dynamic) shared(cifras, rank, size, end, tamanho_cifra, numero_cifras, inicio_salts, cifra_encontrada, cifra_encontrada_buffer, quantos_loops, status) private(palavra, cifra, cd)
+    for(i = rank; i < end; i += size){
+
+        number2word(i, palavra); // colocar INLINE
+        int salt_atual = 0;
+
+        while(inicio_salts[salt_atual + 1] != -1){
+            //Percorre cifras de cada salt
+            cifra = cifras_vet[inicio_salts[salt_atual]];
+
+            const char* palavra_cifrada = crypt_r(palavra, cifra, &cd[salt_atual]); //cifra a palavra com o salt atual
+
+            for(int cifra_atual = inicio_salts[salt_atual]; cifra_atual < inicio_salts[salt_atual + 1]; cifra_atual++){
+                if(cifra_encontrada[cifra_atual]) continue;
+
+                cifra = cifras_vet[cifra_atual];
+                if(strcmp(cifra, palavra_cifrada) == 0){
+                    (*quebrou_alguma_senha) = true;
+                    cifra_encontrada[cifra_atual] = 1;
+                    printf("Rank: %2d\tcifra(%3d): %s\tsenha: %s\n", rank, cifra_atual, cifra, palavra);
                 }
             }
+            // printf("Salt atual:%d\n", salt_atual);
+            salt_atual++;
 
-            #pragma omp section
-            {
-                int quantos_loops = 0; //contador pra ver se tem que verificar cifras encontradas (o numero de loops é define VERIFICAR)
-                #pragma omp parallel for schedule(dynamic) shared(cifras, rank, size, end, tamanho_cifra, numero_cifras, inicio_salts, cifra_encontrada, cifra_encontrada_buffer, quantos_loops, status) private(palavra, cifra, cd)
-                for(i = rank; i < end; i += size){
-
-                    number2word(i, palavra); // colocar INLINE
-                    int salt_atual = 0;
-
-                    while(inicio_salts[salt_atual + 1] != -1){
-                        //Percorre cifras de cada salt
-                        cifra = cifras_vet[inicio_salts[salt_atual]];
-
-                        const char* palavra_cifrada = crypt_r(palavra, cifra, &cd[salt_atual]); //cifra a palavra com o salt atual
-
-                        for(int cifra_atual = inicio_salts[salt_atual]; cifra_atual < inicio_salts[salt_atual + 1]; cifra_atual++){
-                            if(cifra_encontrada[cifra_atual]) continue;
-
-                            cifra = cifras_vet[cifra_atual];
-                            if(strcmp(cifra, palavra_cifrada) == 0){
-                                quebrou_alguma_senha = true;
-                                cifra_encontrada[cifra_atual] = 1;
-                                printf("Rank: %2d\tcifra(%3d): %s\tsenha: %s\n", rank, cifra_atual, cifra, palavra);
-                            }
-                        }
-                        // printf("Salt atual:%d\n", salt_atual);
-                        salt_atual++;
-
-                    }
-                    int tid = omp_get_thread_num();
-                    if(tid == 0){
-                        quantos_loops++;
-                        if(quantos_loops == VERIFICAR){
-                            quantos_loops = 0;
-                            pthread_cond_signal(&cond1); 
-                        }
-                    }
-                }
+        }
+        
+        int tid = omp_get_thread_num();
+        if(tid == 0){
+            quantos_loops++;
+            if(quantos_loops == VERIFICAR){
+                quantos_loops = 0;
+                pthread_cond_signal(cond); 
             }
         }
+         
     }
 
+    
+    (*terminou_execucao) = true;
 
+    pthread_join(thread, NULL);
+    
 
     MPI_Finalize();
 
@@ -264,48 +308,5 @@ void number2word(long num, char *palavra)
         palavra[i] = palavra_inv[j];
     }
     palavra[c] = '\0';
-}
-
-// void number2word(long num, char* palavra){
-//     //14 (abc(4)abc(7))  = 4*64^1 + 7*64^0 = 263 
-//     //263 = dividir sucessivamente, como de decimal para binário
-//     // stringstream palavra_ss;
-//     char palavra_inv[9];
-//     int cont = 0;
-
-//     ldiv_t temp;
-//     temp.quot = num;
-
-//     while(temp.quot != 0){
-//         temp = ldiv(temp.quot, ABC_SIZE);
-//         palavra_inv[cont] = alfabeto[temp.rem - 1];
-//         cont++;
-//     } 
-//     palavra_inv[cont] = '\0';
-//     // string palavra = palavra_ss.str();
-//     // reverse(palavra.begin(), palavra.end());
-//     //Inverte palavra
-//     for(int i = 0, j = cont-1; i < cont+1; i++, j--){
-//         palavra[i] = palavra_inv[j]; 
-//     }
-//     palavra[cont] = '\0';
-// }
-
-string number2word(long num){
-    //14 (abc(4)abc(7))  = 4*64^1 + 7*64^0 = 263 
-    //263 = dividir sucessivamente, como de decimal para binário
-    stringstream palavra_ss;
-
-    ldiv_t temp;
-    temp.quot = num;
-
-    while(temp.quot != 0){
-        temp = ldiv(temp.quot, ABC_SIZE);
-        palavra_ss << alfabeto[temp.rem - 1];
-    } 
-    string palavra = palavra_ss.str();
-    reverse(palavra.begin(), palavra.end());
-
-    return palavra;
 }
 
