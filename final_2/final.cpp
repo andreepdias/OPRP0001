@@ -11,8 +11,10 @@
 #include <crypt.h>
 #include <vector>
 #include <algorithm>
+#include <omp.h>
 
 #define ABC_SIZE 64
+#define VERIFICAR 200
 
 const char alfabeto[ABC_SIZE+1] = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -26,17 +28,15 @@ string number2word(long num);
 int main(int argc, char ** argv){
 
     int *sndbuffer, recvbuffer;
-    int rank, size, tag = 0;
+    int rank, size, tag = 0; 
     long int i;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Status status;
 
     int tamanho_todas_cifras;
-
-    // struct crypt_data cd;
-    // cd.initialized = 0;
 
     char *cifras;
     vector<string> lista_cifras;
@@ -77,14 +77,26 @@ int main(int argc, char ** argv){
     MPI_Bcast(cifras, tamanho_todas_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
 
 
+
+
     int numero_cifras = (tamanho_todas_cifras - 1) / 13; //Número de palavras codificas (cifras) a processar
     int tamanho_cifra = 13;
 
+    char cifras_vet[numero_cifras][tamanho_cifra+1];
+    for(int i = 0; i < numero_cifras; i++){
+        for(int j = 0; j < tamanho_cifra; j++){
+            cifras_vet[i][j] = cifras[i*tamanho_cifra + j];
+        }        
+        cifras_vet[i][tamanho_cifra] = '\0';
+    }
+
     int tamanho_maximo_palavra = 8; //Máximo tamanho possível da senha (resposta)
     
+    char cifra_encontrada[numero_cifras];
+    for(int i = 0; i < numero_cifras; i++) cifra_encontrada[i] = 0;
     
     char palavra[9];
-    char cifra[14];
+    char* cifra;
     char salt[3];
 
     int inicio_salts[numero_cifras];
@@ -94,17 +106,20 @@ int main(int argc, char ** argv){
     // memset(inicio_salts, -1, numero_cifras-1);
     inicio_salts[0] = 0;
     
+
     //Encontra onde começa cada salt (numero da cifra);
     int n_salt = 1;
-    memcpy(cifra, cifras + 0 * tamanho_cifra, tamanho_cifra);
-    cifra[13] = '\0';
+    cifra = cifras_vet[0];
+
     char salt_anterior[3];
-    memcpy(salt_anterior, cifra, 2);
+    salt_anterior[0] = cifra[0];
+    salt_anterior[1] = cifra[1];
     salt_anterior[2] = '\0';
+
     for(int i = 1; i < numero_cifras; i++){
-        memcpy(cifra, cifras + i * tamanho_cifra, tamanho_cifra);
-        cifra[13] = '\0';
-        memcpy(salt, cifra, 2);
+        cifra = cifras_vet[i];
+        salt[0] = cifra[0];
+        salt[1] = cifra[1];
         salt[2] = '\0';
         if(strcmp(salt, salt_anterior) != 0){
             inicio_salts[n_salt] = i;
@@ -114,98 +129,91 @@ int main(int argc, char ** argv){
     }
     inicio_salts[n_salt] = numero_cifras; 
 
-    // if(rank == 0){
-    //     for(int i = 0; i < n_salt+4; i++){
-    //         printf("%d ", inicio_salts[i]);
-    //     }
-    //     printf("\n");
-    // }
+    struct crypt_data cd[n_salt + 1];
 
-
-    struct crypt_data cd[n_salt+1];
-    for(int i = 0; i < n_salt+1; i++){
+    for(int i = 0; i < n_salt + 1; i++){
         cd[i].initialized = 0;
-        // memcpy(cifra, cifras + inicio_salts[i] * tamanho_cifra, tamanho_cifra);
-        // cifra[13] = '\0';
-        // crypt_r("a", cifra, &cd[i]);
     }
 
     long int numero_possibilidades = 0;
     for(int i = 1 ; i <= tamanho_maximo_palavra; i++){
-        numero_possibilidades += std::pow(ABC_SIZE, tamanho_cifra); 
+        numero_possibilidades += std::pow(ABC_SIZE, i); 
     }
-
-    /*
-    long num_palavras_tamanho = std::pow(ABC_SIZE, tamanho_cifra);
-    long num_palavras_tamanho_anterior = 0;
-    if(tamanho_cifra > 1){
-        for(int i = 1; i < tamanho_cifra; i++)
-            num_palavras_tamanho_anterior += std::pow(ABC_SIZE, i);
-    }
-    long int rank_slice = num_palavras_tamanho / size;
-    
-    long int begin = num_palavras_tamanho_anterior + rank_slice * rank;
-    long int end = num_palavras_tamanho_anterior + (rank_slice * rank) + rank_slice;
-    */
-
-
 
     long end = numero_possibilidades;
-    
-    // map<char*, struct crypt_data*> salts;
+    char cifra_encontrada_buffer[numero_cifras];
 
-
-    // #pragma omp parallel for schedule(dynamic) shared(cifras, rank, size, end, tamanho_cifra, numero_cifras) private(salts, palavra, cifra, salt)
-    for(i = rank; i < end; i += size){
-
-        number2word(i, palavra); // colocar INLINE
-        int salt_atual = 0;
-        while(inicio_salts[salt_atual+1] != -1){
-            //Percorre cifras de cada salt
-             memcpy(cifra, cifras + inicio_salts[salt_atual] * tamanho_cifra, tamanho_cifra);
-            cifra[13] = '\0';
-            const char* palavra_cifrada = crypt_r(palavra, cifra, &cd[salt_atual]); //cifra a palavra com o salt atual
-
-            for(int cifra_atual = inicio_salts[salt_atual]; cifra_atual < inicio_salts[salt_atual+1]; cifra_atual++){
-                // printf("palavra: %s\tcifra: %s\n", palavra, cifra);
-                memcpy(cifra, cifras + cifra_atual * tamanho_cifra, tamanho_cifra);
-                cifra[13] = '\0';
-                if(strcmp(cifra, palavra_cifrada) == 0){
-                    printf("Rank: %2d\tcifra(%3d): %s\tsenha: %s\n", rank, cifra_atual, cifra, palavra);
-                }
-            }
-            // printf("Salt atual:%d\n", salt_atual);
-            salt_atual++;
+    #pragma parallel sections
+    {
+        #pragma omp section
+        {
 
         }
 
-       /* for(int cifra_atual = 0; cifra_atual < numero_cifras; cifra_atual++){
-            
-            memcpy(cifra, cifras + cifra_atual * tamanho_cifra, tamanho_cifra);
-            cifra[13] = '\0';
+        #pragma omp section
+        {
+            int quantos_loops = 0; //contador pra ver se tem que verificar cifras encontradas (o numero de loops é define VERIFICAR)
+            #pragma omp parallel for schedule(dynamic) shared(cifras, rank, size, end, tamanho_cifra, numero_cifras, inicio_salts, cifra_encontrada, cifra_encontrada_buffer, quantos_loops, status) private(palavra, cifra, cd)
+            for(i = rank; i < end; i += size){
 
-            memcpy(salt, cifra, 2);
-            salt[2] = '\0';
+                int tid = omp_get_thread_num();
+                if(quantos_loops >= VERIFICAR and tid == 0){
+                    //Responsável por fazer a sincronização
+                    // {
+                        if(rank == 0){ //Receptor das mensagens
+                            int flag = false;
+                            MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);
+                            while(flag){
+                                MPI_Recv(cifra_encontrada_buffer, numero_cifras, MPI_CHAR, status.MPI_SOURCE, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                                for(int n = 0; n < numero_cifras; n++) 
+                                {
+                                    cifra_encontrada[n] = cifra_encontrada[n] | cifra_encontrada_buffer[n];
+                                }
+                                flag = false;
+                                MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);                    
+                            }
+                            MPI_Bcast(cifra_encontrada, numero_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
 
-            struct crypt_data *c;
+                        }
+                        else{ //Só busca a sincronização
+                            memcpy(cifra_encontrada_buffer, cifra_encontrada, numero_cifras);
+                            MPI_Send(cifra_encontrada_buffer, numero_cifras, MPI_CHAR, 0, tag, MPI_COMM_WORLD);
+                            MPI_Bcast(cifra_encontrada, numero_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
+                        }
+                    // }
+                    quantos_loops = 0;
+                }
 
-            // printf("palavra: %s\tcifra: %s\tsalt: %s\n", palavra, cifra,  salt);
+                // printf("%d\n", cd[0].initialized);
 
-            if(salts.find(salt) == salts.end()){
-                c = new crypt_data();
-                c->initialized = 0;
+                number2word(i, palavra); // colocar INLINE
+                int salt_atual = 0;
+                while(inicio_salts[salt_atual + 1] != -1){
+                    //Percorre cifras de cada salt
 
-                salts[salt] = c;
-            }else{
-                c = salts[salt];
+                    cifra = cifras_vet[inicio_salts[salt_atual]];
+
+                    const char* palavra_cifrada = crypt_r(palavra, cifra, &cd[salt_atual]); //cifra a palavra com o salt atual
+
+                    for(int cifra_atual = inicio_salts[salt_atual]; cifra_atual < inicio_salts[salt_atual + 1]; cifra_atual++){
+                        if(cifra_encontrada[cifra_atual]) continue;
+
+                        cifra = cifras_vet[cifra_atual];
+                        if(strcmp(cifra, palavra_cifrada) == 0){
+                            cifra_encontrada[cifra_atual] = 1;
+                            printf("Rank: %2d\tcifra(%3d): %s\tsenha: %s\n", rank, cifra_atual, cifra, palavra);
+                        }
+                    }
+                    // printf("Salt atual:%d\n", salt_atual);
+                    salt_atual++;
+
+                }
+                quantos_loops++;
             }
-
-            if(strcmp(crypt_r(palavra, cifra, c), cifra) == 0){
-                printf("Rank: %2d\tcifra(%3d): %s\tsenha: %s\ti: %ld\n", rank, cifra_atual, cifra, palavra, i);
-            }
-            
-        }*/
+        }
     }
+
+
 
     MPI_Finalize();
 
