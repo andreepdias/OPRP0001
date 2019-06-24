@@ -26,12 +26,16 @@ typedef struct
     pthread_cond_t *cond;
     pthread_mutex_t *lock;
     int numero_cifras;
+    int numero_salts;
+    int *inicio_salts;
+    char *salt_encontrado;
     char *cifra_encontrada;
-    bool *quebrou_alguma_senha;
-    bool *terminou_execucao;
+    char *quebrou_alguma_senha;
+    char *terminou_execucao;
 } DadosThread;
 
 
+//Sincroniza as cifras e salts já encontrados
 void *thread_sincronizacao(void *_dt)
 {
     DadosThread *dt = (DadosThread *)_dt;
@@ -41,10 +45,14 @@ void *thread_sincronizacao(void *_dt)
     pthread_cond_t *cond = (*dt).cond;
     pthread_mutex_t *lock = (*dt).lock;
     int numero_cifras = (*dt).numero_cifras;
+    int numero_salts = (*dt).numero_salts;
+    int *inicio_salts = (*dt).inicio_salts;
+    char *salt_encontrado = (*dt).salt_encontrado;
     char *cifra_encontrada = (*dt).cifra_encontrada;
-    bool *quebrou_alguma_senha = (*dt).quebrou_alguma_senha;    
-    bool *terminou_execucao = (*dt).terminou_execucao;
+    char *quebrou_alguma_senha = (*dt).quebrou_alguma_senha;    
+    char *terminou_execucao = (*dt).terminou_execucao;
     char cifra_encontrada_buffer[numero_cifras];
+    char salt_encontrado_buffer[numero_salts];
 
     MPI_Status status;
     int flag, tag = 0;;
@@ -66,8 +74,23 @@ void *thread_sincronizacao(void *_dt)
             // *** processa salts com todas cifras resolvidas 
             // bcast(salts_resolvidos -> buffer)
 
-            MPI_Bcast(cifra_encontrada, numero_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
+            //Encontra os salts já resolvidos
+            for(int i = 0; i < numero_salts; i++){
+                int j = inicio_salts[i];
+                bool falta_alguem = false;
+                while(j < inicio_salts[i+1]){
+                    if(not cifra_encontrada){
+                        falta_alguem = true;
+                        break;
+                    }
+                }
+                if(not falta_alguem) salt_encontrado[i] = 1;
+            }
 
+
+            MPI_Bcast(cifra_encontrada, numero_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
+            MPI_Bcast(salt_encontrado, numero_salts, MPI_CHAR, 0, MPI_COMM_WORLD);
+    
         }
         else{ //Só busca a sincronização
             if((*quebrou_alguma_senha)){
@@ -76,6 +99,8 @@ void *thread_sincronizacao(void *_dt)
             }
             (*quebrou_alguma_senha) = false;
             MPI_Bcast(cifra_encontrada, numero_cifras, MPI_CHAR, 0, MPI_COMM_WORLD);
+            MPI_Bcast(salt_encontrado, numero_salts, MPI_CHAR, 0, MPI_COMM_WORLD);
+
         }
     }
 }
@@ -149,8 +174,9 @@ int main(int argc, char ** argv){
     int tamanho_maximo_palavra = 8; //Máximo tamanho possível da senha (resposta)
     
     char cifra_encontrada[numero_cifras];
-    for(int i = 0; i < numero_cifras; i++) cifra_encontrada[i] = 0;
-    
+    memset(cifra_encontrada, 0, numero_cifras);
+
+
     char palavra[9];
     char* cifra;
     char salt[3];
@@ -183,6 +209,10 @@ int main(int argc, char ** argv){
         strcpy(salt_anterior, salt);
     }
     inicio_salts[n_salt] = numero_cifras; 
+    
+    char salt_encontrado[n_salt];
+    memset(salt_encontrado, 0, n_salt);
+    
 
     struct crypt_data cd[n_salt + 1];
 
@@ -198,7 +228,7 @@ int main(int argc, char ** argv){
     long end = numero_possibilidades;
     char cifra_encontrada_buffer[numero_cifras];
 
-    bool *quebrou_alguma_senha = new bool;
+    char *quebrou_alguma_senha = new char;
     (*quebrou_alguma_senha) = false;
 
     
@@ -209,7 +239,7 @@ int main(int argc, char ** argv){
     pthread_mutex_t *lock = new pthread_mutex_t;
     (*lock) = PTHREAD_MUTEX_INITIALIZER; 
     
-    bool *terminou_execucao = new bool;
+    char *terminou_execucao = new char;
     (*terminou_execucao) = false;
 
     pthread_t thread;
@@ -219,7 +249,10 @@ int main(int argc, char ** argv){
     dt.cond = cond;
     dt.lock = lock;
     dt.numero_cifras = numero_cifras;
+    dt.numero_salts = n_salt;
+    dt.inicio_salts = inicio_salts; 
     dt.cifra_encontrada = cifra_encontrada;
+    dt.salt_encontrado = salt_encontrado;
     dt.quebrou_alguma_senha = quebrou_alguma_senha;
     dt.terminou_execucao = terminou_execucao;
 
@@ -228,13 +261,14 @@ int main(int argc, char ** argv){
 
 
     int quantos_loops = 0; //contador pra ver se tem que verificar cifras encontradas (o numero de loops é define VERIFICAR)
-    #pragma omp parallel for schedule(dynamic) shared(cifras, rank, size, end, tamanho_cifra, numero_cifras, inicio_salts, cifra_encontrada, cifra_encontrada_buffer, quantos_loops, status) private(palavra, cifra, cd)
+    #pragma omp parallel for schedule(dynamic) shared(cifras, rank, size, end, tamanho_cifra, numero_cifras, inicio_salts, salt_encontrado, cifra_encontrada, cifra_encontrada_buffer, quantos_loops, status) private(palavra, cifra, cd)
     for(i = rank; i < end; i += size){
 
         number2word(i, palavra); // colocar INLINE
         int salt_atual = 0;
 
         while(inicio_salts[salt_atual + 1] != -1){
+            if(salt_encontrado[salt_atual]) continue;
             //Percorre cifras de cada salt
             cifra = cifras_vet[inicio_salts[salt_atual]];
 
